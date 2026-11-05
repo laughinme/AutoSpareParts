@@ -1,4 +1,5 @@
-import { type ReactNode, useCallback, useEffect, useRef, useState } from "react"
+import { type ReactNode, useCallback, useEffect, useLayoutEffect, useRef, useState } from "react"
+import { LoaderCircle } from "lucide-react"
 import { useQueryClient } from "@tanstack/react-query"
 import {
   BrowserRouter,
@@ -8,10 +9,12 @@ import {
   Routes,
   useLocation,
   useNavigate,
+  useNavigationType,
 } from "react-router-dom"
 
 import { useAuth } from "@/app/providers/auth/useAuth"
 import AuthPage from "@/pages/auth/ui/AuthPage"
+import { Brand } from "@/shared/components/brand"
 import { SiteHeader } from "@/shared/components/site-header"
 import type { AuthUser } from "@/entities/auth/model"
 import { isAdminUser } from "@/entities/auth/lib/roles"
@@ -39,7 +42,8 @@ export type ProtectedOutletContext = {
 }
 
 function ProtectedLayout({ user, isAdmin, homePath }: ProtectedLayoutProps) {
-  const location = useLocation()
+  const { pathname, search, hash } = useLocation()
+  const navigationType = useNavigationType()
   const navigate = useNavigate()
   const queryClient = useQueryClient()
   const email = user.email ?? ""
@@ -48,11 +52,11 @@ function ProtectedLayout({ user, isAdmin, homePath }: ProtectedLayoutProps) {
   const name =
     rawName?.trim() ||
     (email ? email.split("@")[0] : undefined) ||
-    "User"
+    "Пользователь"
   const headerUser = {
     name,
     email,
-    avatar: "/avatars/shadcn.jpg",
+    avatar: typeof user.profile_pic_url === "string" ? user.profile_pic_url : "",
   }
   const userOrganization = user.organization ?? null
   const [headerSearch, setHeaderSearch] = useState<ReactNode>(null)
@@ -73,6 +77,10 @@ function ProtectedLayout({ user, isAdmin, homePath }: ProtectedLayoutProps) {
     setHeaderSearch(node)
   }, [])
 
+  useLayoutEffect(() => {
+    if (navigationType !== "POP" && !hash) window.scrollTo(0, 0)
+  }, [pathname, navigationType, hash])
+
   const hasSupplierAccess = Boolean(userOrganization?.id)
 
   const isSupplierPath = useCallback(
@@ -81,22 +89,22 @@ function ProtectedLayout({ user, isAdmin, homePath }: ProtectedLayoutProps) {
   )
 
   useEffect(() => {
-    if (!isSupplierPath(location.pathname) || hasSupplierAccess) {
-      setLastAccessiblePath(location.pathname)
+    if (!isSupplierPath(pathname) || hasSupplierAccess) {
+      setLastAccessiblePath(pathname)
     }
-  }, [hasSupplierAccess, isSupplierPath, location.pathname])
+  }, [hasSupplierAccess, isSupplierPath, pathname])
 
   useEffect(() => {
-    if (!location.search || lastCheckoutSearch.current === location.search) {
+    if (!search || lastCheckoutSearch.current === search) {
       return
     }
 
-    const params = new URLSearchParams(location.search)
+    const params = new URLSearchParams(search)
     if (!params.has("session_id") && !params.has("redirect_status")) {
       return
     }
 
-    lastCheckoutSearch.current = location.search
+    lastCheckoutSearch.current = search
 
     const invalidateCartQueries = async () => {
       await Promise.all([
@@ -107,18 +115,18 @@ function ProtectedLayout({ user, isAdmin, homePath }: ProtectedLayoutProps) {
     }
 
     void invalidateCartQueries()
-  }, [location.search, queryClient])
+  }, [search, queryClient])
 
   useEffect(() => {
-    if (isSupplierPath(location.pathname) && !hasSupplierAccess) {
-      setPendingSupplierPath(location.pathname)
+    if (isSupplierPath(pathname) && !hasSupplierAccess) {
+      setPendingSupplierPath(pathname)
       setIsOnboardingDialogOpen(true)
       const fallback =
-        lastAccessiblePath === location.pathname
+        lastAccessiblePath === pathname
           ? ROUTE_PATHS.buyer.fyp
           : lastAccessiblePath
 
-      if (fallback !== location.pathname) {
+      if (fallback !== pathname) {
         navigate(fallback, { replace: true })
       }
     }
@@ -126,7 +134,7 @@ function ProtectedLayout({ user, isAdmin, homePath }: ProtectedLayoutProps) {
     hasSupplierAccess,
     isSupplierPath,
     lastAccessiblePath,
-    location.pathname,
+    pathname,
     navigate,
   ])
 
@@ -186,7 +194,7 @@ function ProtectedLayout({ user, isAdmin, homePath }: ProtectedLayoutProps) {
         navItemCounters={navItemCounters}
         onNavItemSelect={handleNavItemSelect}
       />
-      <main className="flex flex-1 flex-col">
+      <main id="main-content" tabIndex={-1} className="site-main flex flex-1 flex-col">
         <Outlet context={{ setHeaderSearch: handleSetHeaderSearch }} />
       </main>
       <SupplierOnboardingDialog
@@ -216,18 +224,11 @@ function App() {
 
   const { user, isUserLoading, isRestoringSession } = authData
 
-  if (isRestoringSession) {
+  if (isRestoringSession || isUserLoading) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-slate-50">
-        <p className="text-lg text-slate-500">Загрузка сессии...</p>
-      </div>
-    )
-  }
-
-  if (isUserLoading) {
-    return (
-      <div className="min-h-screen flex items-center justify-center bg-slate-50">
-        <p className="text-lg text-slate-500">Загрузка пользователя...</p>
+      <div className="session-loading" role="status">
+        <Brand compact />
+        <p><LoaderCircle className="size-4 animate-spin" aria-hidden="true" /> Загружаем аккаунт…</p>
       </div>
     )
   }

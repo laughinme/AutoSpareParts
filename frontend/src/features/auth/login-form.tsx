@@ -1,44 +1,44 @@
-import { type ComponentProps, type FormEvent } from "react"
+import { type ComponentProps, type FormEvent } from "react";
 
-import { Button } from "@/shared/components/ui/button"
+import { Button } from "@/shared/components/ui/button";
 import {
   Card,
   CardContent,
   CardDescription,
   CardHeader,
   CardTitle,
-} from "@/shared/components/ui/card"
+} from "@/shared/components/ui/card";
 import {
   Field,
   FieldDescription,
   FieldGroup,
   FieldError,
   FieldLabel,
-} from "@/shared/components/ui/field"
-import { Input } from "@/shared/components/ui/input"
-import { cn } from "@/shared/lib/utils"
+} from "@/shared/components/ui/field";
+import { Input } from "@/shared/components/ui/input";
+import { cn } from "@/shared/lib/utils";
 
-const DEMO_PASSWORD = "Password123!"
+const DEMO_PASSWORD = "Password123!";
 
 const DEMO_USERS = [
   { key: "admin", label: "Админ", email: "admin@demo.local" },
   { key: "supplier", label: "Поставщик", email: "supplier1@demo.local" },
   { key: "buyer", label: "Покупатель", email: "buyer1@demo.local" },
-] as const
+] as const;
 
-type LoginFormProps = ComponentProps<"div"> & {
-  email: string
-  password: string
-  onEmailChange: (value: string) => void
-  onPasswordChange: (value: string) => void
-  onSubmit: (event: FormEvent<HTMLFormElement>) => void
-  onDemoLogin?: (email: string, password: string) => void | Promise<void>
-  submitLabel: string
-  disabled?: boolean
-  submitDisabled?: boolean
-  errorMessage?: string | null
-  onSwitchToSignup: () => void
-}
+type LoginFormProps = Omit<ComponentProps<"div">, "onSubmit"> & {
+  email: string;
+  password: string;
+  onEmailChange: (value: string) => void;
+  onPasswordChange: (value: string) => void;
+  onSubmit: (event: FormEvent<HTMLFormElement>) => void;
+  onDemoLogin: (email: string, password: string) => Promise<void>;
+  submitLabel: string;
+  disabled?: boolean;
+  submitDisabled?: boolean;
+  errorMessage?: string | null;
+  onSwitchToSignup: () => void;
+};
 
 export function LoginForm({
   className,
@@ -57,16 +57,16 @@ export function LoginForm({
 }: LoginFormProps) {
   return (
     <div
-      className={cn("flex flex-col gap-6 text-neutral-200", className)}
+      className={cn("flex flex-col gap-6 text-foreground", className)}
       {...props}
     >
-      <Card className="bg-neutral-900 border-neutral-800 shadow-none">
+      <Card className="bg-card border-border shadow-none">
         <CardHeader className="space-y-2 text-center">
-          <CardTitle className="text-xl font-semibold text-white">
-            Welcome back
+          <CardTitle className="text-xl font-semibold text-foreground">
+            С возвращением
           </CardTitle>
-          <CardDescription className="text-sm text-neutral-400">
-            Sign in with your email and password
+          <CardDescription className="text-sm text-muted-foreground">
+            Войдите, чтобы продолжить свой путь
           </CardDescription>
         </CardHeader>
         <CardContent>
@@ -76,28 +76,28 @@ export function LoginForm({
               <Field>
                 <FieldLabel
                   htmlFor="email"
-                  className="text-sm font-medium text-neutral-200"
+                  className="text-sm font-medium text-foreground"
                 >
                   Email
                 </FieldLabel>
                 <Input
                   id="email"
                   type="email"
-                  placeholder="m@example.com"
+                  placeholder="you@example.com"
                   required
                   autoComplete="email"
                   value={email}
                   onChange={(event) => onEmailChange(event.target.value)}
                   disabled={disabled}
-                  className="bg-neutral-950 border-neutral-800 text-neutral-100 placeholder:text-neutral-500"
+                  className="bg-card border-input text-foreground placeholder:text-muted-foreground"
                 />
               </Field>
               <Field>
                 <FieldLabel
                   htmlFor="password"
-                  className="text-sm font-medium text-neutral-200"
+                  className="text-sm font-medium text-foreground"
                 >
-                  Password
+                  Пароль
                 </FieldLabel>
                 <Input
                   id="password"
@@ -107,57 +107,51 @@ export function LoginForm({
                   value={password}
                   onChange={(event) => onPasswordChange(event.target.value)}
                   disabled={disabled}
-                  className="bg-neutral-950 border-neutral-800 text-neutral-100 placeholder:text-neutral-500"
+                  className="bg-card border-input text-foreground placeholder:text-muted-foreground"
                 />
               </Field>
               <Field>
                 <Button
                   type="submit"
                   disabled={submitDisabled || disabled}
-                  className="bg-white text-neutral-900 hover:bg-neutral-200 disabled:bg-neutral-700 disabled:text-neutral-400"
+                  className="bg-primary text-primary-foreground hover:bg-primary/90"
                 >
                   {submitLabel}
                 </Button>
-
               </Field>
             </FieldGroup>
 
-            <div className="flex flex-col gap-2">
-               <div className="space-y-1">              
-                <p className="text-sm font-semibold text-white">Демо пользователи · Click</p>
-            </div>
-              {DEMO_USERS.map((user) => (
-                <Button
-                  key={user.key}
-	                  type="button"
-	                  variant="outline"
-	                  disabled={disabled}
-	                  className="h-auto w-full flex-col items-start gap-1 rounded-lg border-neutral-700/60 bg-neutral-900/60 px-3 py-2 text-left text-neutral-100 hover:bg-neutral-800/70 hover:text-white"
-	                  onClick={() => {
-                      onEmailChange(user.email)
-                      onPasswordChange(DEMO_PASSWORD)
-                      void onDemoLogin?.(user.email, DEMO_PASSWORD)
-                    }}
-                >
-                  <span className="text-sm font-medium leading-none">
-                    {user.label}
-                  </span>
-                </Button>
-              ))}
-            </div>
-                <FieldDescription className="text-center text-sm text-neutral-400">
-                  Don&apos;t have an account?{" "}
-                  <button
+            <div className="demo-users">
+              <p>Знакомитесь с сервисом? Выберите демоаккаунт</p>
+              <div>
+                {DEMO_USERS.map((user) => (
+                  <Button
+                    key={user.key}
                     type="button"
-                    onClick={onSwitchToSignup}
-                    className="underline-offset-4 hover:underline text-white"
+                    variant="outline"
+                    disabled={disabled}
+                    onClick={() => {
+                      void onDemoLogin(user.email, DEMO_PASSWORD);
+                    }}
                   >
-                    Sign up
-                  </button>
-                </FieldDescription>
+                    {user.label}
+                  </Button>
+                ))}
+              </div>
+            </div>
+            <FieldDescription className="text-center text-sm text-muted-foreground">
+              Ещё нет аккаунта?{" "}
+              <button
+                type="button"
+                onClick={onSwitchToSignup}
+                className="underline-offset-4 hover:underline text-foreground"
+              >
+                Зарегистрироваться
+              </button>
+            </FieldDescription>
           </form>
         </CardContent>
       </Card>
     </div>
-  )
+  );
 }

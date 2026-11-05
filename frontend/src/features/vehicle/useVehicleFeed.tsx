@@ -21,7 +21,7 @@ export function useVehicleFeedInfinite() {
   const { data: rawData, ...rest } = useInfiniteQuery({
     queryKey: VEHICLE_FEED_QUERY_KEY,
     initialPageParam: null as string | null,
-    queryFn: ({ pageParam }) => getVehicles({ cursor: pageParam, limit: 20 }),
+    queryFn: ({ pageParam }) => getVehicles({ cursor: pageParam ?? undefined, limit: 20 }),
     getNextPageParam: (last) => last.next_cursor ?? undefined,
     staleTime: 30_000,
   })

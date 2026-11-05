@@ -1,21 +1,38 @@
-import { FeedProducts } from "@/widgets/product/FeedProducts"
+import { ArrowDown, ArrowUpRight, CarFront } from "lucide-react";
+import { Link } from "react-router-dom";
+import { FeedProducts } from "@/widgets/product/FeedProducts";
+import { ROUTE_PATHS } from "@/app/routes";
 
 export default function FypPage() {
   return (
-    <div className="flex flex-1 flex-col">
-      <div className="@container/main flex flex-1 flex-col gap-6 px-4 py-6 md:px-6">
-        <header className="flex flex-col gap-1">
-          <h1 className="text-2xl font-semibold tracking-tight">
-            For You
-          </h1>
-          <p className="text-sm text-muted-foreground">
-            Откройте новые запчасти, подобранные специально под ваши
-            интересы.
-          </p>
-        </header>
+    <div className="marketplace-page">
+      <div className="storefront-intro">
+        <section className="storefront-hero" aria-labelledby="storefront-title">
+          <div className="storefront-hero-art" aria-hidden="true">
+            <img src="/marketplace/brake-assembly.jpg" alt="" fetchPriority="high" />
+          </div>
+          <div className="storefront-hero-copy">
+            <h1 id="storefront-title">Всё дело<br />в деталях.</h1>
+            <p>Новые и б/у запчасти для вашего автомобиля. Ищите по названию или артикулу.</p>
+            <a className="storefront-hero-action" href="#catalog">
+              Смотреть каталог <ArrowDown size={17} aria-hidden="true" />
+            </a>
+          </div>
+        </section>
 
-        <FeedProducts />
+        <Link to={ROUTE_PATHS.buyer.garage} className="storefront-garage">
+          <CarFront className="garage-mark" size={28} strokeWidth={1.5} aria-hidden="true" />
+          <div>
+            <h2>Мой гараж</h2>
+            <p>Марка, модель и VIN ваших автомобилей в одном месте.</p>
+          </div>
+          <span className="garage-link">
+            <span>Открыть гараж</span><ArrowUpRight size={19} aria-hidden="true" />
+          </span>
+        </Link>
       </div>
+
+      <FeedProducts />
     </div>
-  )
+  );
 }

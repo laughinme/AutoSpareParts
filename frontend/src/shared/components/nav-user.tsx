@@ -1,7 +1,7 @@
 import type { MouseEvent } from "react"
 import {
   IconBuilding,
-  IconDotsVertical,
+  IconChevronDown,
   IconLogout,
   IconRefresh,
   IconUserCircle,
@@ -50,7 +50,7 @@ export function NavUser({
   }) => boolean | void
 }) {
   const logout = useAuth()?.logout
-  const displayName = user.name?.trim() || "User"
+  const displayName = user.name?.trim() || "Пользователь"
   const displayEmail = user.email?.trim() || "—"
   const initials =
     (displayName.match(/\b\w/g)?.join("").slice(0, 2) ||
@@ -133,7 +133,8 @@ export function NavUser({
       <DropdownMenuTrigger asChild>
         <Button
           variant="ghost"
-          className="group flex h-12 items-center gap-3 rounded-lg border border-transparent px-2 text-left transition-colors hover:border-input hover:bg-accent/50"
+          aria-label="Меню профиля"
+          className="profile-trigger group flex h-12 items-center gap-3 rounded-lg border border-transparent px-2 text-left transition-colors hover:border-input hover:bg-accent/50"
         >
           <Avatar className="h-9 w-9 rounded-lg">
             <AvatarImage {...avatarProps} />
@@ -147,7 +148,7 @@ export function NavUser({
               {displayEmail}
             </span>
           </div>
-          <IconDotsVertical className="ml-auto size-4 text-muted-foreground transition-colors group-hover:text-foreground" />
+          <IconChevronDown className="ml-auto size-4 text-muted-foreground transition-colors group-hover:text-foreground" />
         </Button>
       </DropdownMenuTrigger>
       <DropdownMenuContent
@@ -177,13 +178,13 @@ export function NavUser({
           <DropdownMenuItem asChild>
             <Link to={ROUTE_PATHS.account.profile}>
               <IconUserCircle />
-              Account
+              Личный кабинет
             </Link>
           </DropdownMenuItem>
           <DropdownMenuSub>
             <DropdownMenuSubTrigger>
               <IconBuilding />
-              Organizations
+              Организации
             </DropdownMenuSubTrigger>
             <DropdownMenuSubContent className="min-w-[220px]">
               {renderOrganizationsMenuContent()}
@@ -210,7 +211,7 @@ export function NavUser({
         <DropdownMenuSeparator />
         <DropdownMenuItem onSelect={handleLogout}>
           <IconLogout />
-          Log out
+          Выйти
         </DropdownMenuItem>
       </DropdownMenuContent>
     </DropdownMenu>

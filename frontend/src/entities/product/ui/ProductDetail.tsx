@@ -1,4 +1,5 @@
-import { ImageIcon, Loader2, Minus, Plus } from "lucide-react"
+import { useState } from "react"
+import { ImageIcon, Loader2, Minus, Plus, ShoppingBag } from "lucide-react"
 
 import type { ProductDetail } from "@/entities/product/model/types"
 import { Badge } from "@/shared/components/ui/badge"
@@ -6,7 +7,6 @@ import {
   Card,
   CardContent,
   CardHeader,
-  CardTitle,
 } from "@/shared/components/ui/card"
 import { Button } from "@/shared/components/ui/button"
 import { Separator } from "@/shared/components/ui/separator"
@@ -32,25 +32,27 @@ export function ProductDetails({
   isCartUpdating = false,
   showCartActions = true,
 }: ProductDetailsProps) {
+  const [failedImage, setFailedImage] = useState<string | null>(null)
   const priceLabel = formatPrice(product.price, product.currency)
   const conditionLabel = formatCondition(product.condition)
   const stockLabel = formatStock(product.qty)
   const isInCart = cartQuantity > 0
   const isMinusDisabled = isCartUpdating || !onDecrement || cartQuantity <= 0
-  const isPlusDisabled = isCartUpdating || !onIncrement
-  const isAddDisabled = isAddToCartLoading || !onAddToCart
+  const isPlusDisabled = isCartUpdating || !onIncrement || cartQuantity >= product.qty
+  const isAddDisabled = isAddToCartLoading || !onAddToCart || product.qty <= 0
 
   return (
-    <div className="grid gap-6 lg:grid-cols-[minmax(0,1.4fr)_minmax(0,1fr)]">
-      <div className="space-y-4">
-        <Card className="overflow-hidden">
+    <div className="product-detail-layout grid gap-6 lg:grid-cols-[minmax(0,1.4fr)_minmax(0,1fr)]">
+      <div className="product-detail-media-group space-y-4">
+        <Card className="product-detail-photo overflow-hidden py-0">
           <CardContent className="border-b-0 p-0">
             <div className="relative aspect-[4/3] w-full bg-muted">
-              {product.imageUrl ? (
+              {product.imageUrl && failedImage !== product.imageUrl ? (
                 <img
                   src={product.imageUrl}
                   alt={product.title}
-                  className="h-full w-full object-cover"
+                  className="product-detail-image h-full w-full object-contain"
+                  onError={() => setFailedImage(product.imageUrl ?? null)}
                   loading="lazy"
                 />
               ) : (
@@ -63,16 +65,13 @@ export function ProductDetails({
           </CardContent>
         </Card>
 
-        <Card>
+        <Card className="product-detail-description">
           <CardHeader className="pb-4">
-            <CardTitle className="text-lg font-semibold">
-              Описание
-            </CardTitle>
-            <Separator />
+            <h2 className="product-detail-section-title">Описание</h2>
           </CardHeader>
           <CardContent className="text-sm leading-relaxed text-muted-foreground">
             {product.description ? (
-              <p className="whitespace-pre-line">{product.description}</p>
+              <p className="whitespace-pre-line [overflow-wrap:anywhere]">{product.description}</p>
             ) : (
               <p className="italic text-muted-foreground/80">
                 Описание пока не добавлено.
@@ -82,31 +81,18 @@ export function ProductDetails({
         </Card>
       </div>
 
-      <div className="space-y-4">
-        <Card>
-          <CardHeader className="space-y-3 pb-0">
-            <div className="flex items-center gap-3">
-              {conditionLabel && (
-                <Badge variant="secondary" className="uppercase tracking-wide">
-                  {conditionLabel}
-                </Badge>
-              )}
-            </div>
-            <CardTitle className="text-2xl font-bold leading-tight">
-              {product.title}
-            </CardTitle>
+      <div className="product-detail-info-group space-y-4">
+        <Card className="product-detail-buy">
+          <CardHeader className="product-detail-heading">
+            {conditionLabel && <Badge variant="secondary">{conditionLabel}</Badge>}
+            <h1>{product.title}</h1>
           </CardHeader>
-          <CardContent className="space-y-6 pt-6">
+          <CardContent className="product-detail-purchase">
             <div>
-              <span className="text-xs uppercase tracking-wide text-muted-foreground">
-                Цена
-              </span>
-              <p className="text-3xl font-semibold">{priceLabel}</p>
-              <p className="mt-2 text-sm text-muted-foreground">
-                В наличии:&nbsp;
-                <span className="font-semibold text-foreground">
-                  {stockLabel}
-                </span>
+              <p className="product-detail-price">{priceLabel}</p>
+              <p className="product-detail-stock">
+                <span className={product.qty > 0 ? "in-stock" : ""} />
+                {product.qty > 0 ? `В наличии · ${stockLabel} шт.` : "Нет в наличии"}
               </p>
             </div>
             {showCartActions && (
@@ -151,36 +137,30 @@ export function ProductDetails({
                   </div>
                 ) : (
                   <Button
-                    className="flex-1"
+                    className="min-h-12 flex-1 gap-2"
                     onClick={onAddToCart}
                     disabled={isAddDisabled}
                   >
-                    {isAddToCartLoading && (
-                      <Loader2 className="mr-2 size-4 animate-spin" aria-hidden />
-                    )}
-                    Добавить в корзину
+                    {isAddToCartLoading
+                      ? <Loader2 className="size-4 animate-spin" aria-hidden />
+                      : <ShoppingBag className="size-4" aria-hidden />}
+                    {product.qty > 0 ? "Добавить в корзину" : "Недоступно"}
                   </Button>
                 )}
-                <Button variant="outline" className="flex-1">
-                  Оставить отзыв
-                </Button>
               </div>
             )}
           </CardContent>
         </Card>
 
-        <Card>
+        <Card className="product-detail-specs">
           <CardHeader className="pb-4">
-            <CardTitle className="text-lg font-semibold">
-              Характеристики
-            </CardTitle>
+            <h2 className="product-detail-section-title">Характеристики</h2>
             <Separator />
           </CardHeader>
           <CardContent className="space-y-4 text-sm">
             <CharacteristicRow label="Состояние" value={conditionLabel ?? "—"} />
             <CharacteristicRow label="Валюта" value={product.currency?.toUpperCase() ?? "—"} />
-            <CharacteristicRow label="Цена" value={priceLabel} />
-            <CharacteristicRow label="В наличии" value={stockLabel} />
+            <CharacteristicRow label="Остаток" value={`${stockLabel} шт.`} />
           </CardContent>
         </Card>
       </div>
@@ -212,7 +192,8 @@ const formatPrice = (price: number, currency?: string) => {
     return new Intl.NumberFormat("ru-RU", {
       style: "currency",
       currency: currency ?? "USD",
-      maximumFractionDigits: 0,
+      minimumFractionDigits: 0,
+      maximumFractionDigits: 2,
     }).format(price)
   } catch {
     return Number(price).toLocaleString("ru-RU")
@@ -233,5 +214,5 @@ const formatCondition = (condition: string) => {
   if (!condition) {
     return null
   }
-  return condition.replace(/_/g, " ")
+  return ({ new: "Новая", used: "Б/у", refurbished: "Восстановленная" } as Record<string, string>)[condition] ?? condition.replace(/_/g, " ")
 }

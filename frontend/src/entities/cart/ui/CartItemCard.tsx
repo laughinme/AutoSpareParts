@@ -30,14 +30,14 @@ export function CartItemCard({ item, onRemove, isRemoving, actions }: CartItemCa
   const isLocked = item.status === "locked" || !allowCart;
 
   return (
-    <Card>
+    <Card className="cart-item-card">
       <CardContent className="flex flex-col gap-4 p-4 sm:flex-row sm:items-start sm:gap-6 sm:p-6">
         <div className="relative flex h-24 w-24 shrink-0 items-center justify-center overflow-hidden rounded-md border bg-muted sm:h-28 sm:w-28">
           {imageUrl ? (
             <img
               src={imageUrl}
               alt={title}
-              className="h-full w-full object-cover"
+              className="h-full w-full object-contain"
               loading="lazy"
             />
           ) : (
@@ -145,10 +145,11 @@ const formatMoney = (value: number) => {
   }
 
   try {
-    return new Intl.NumberFormat("en-US", {
+    return new Intl.NumberFormat("ru-RU", {
       style: "currency",
       currency: "USD",
-      maximumFractionDigits: 0,
+      minimumFractionDigits: 0,
+      maximumFractionDigits: 2,
     }).format(value);
   } catch {
     return `$${Number(value).toLocaleString("en-US")}`;

@@ -1,49 +1,29 @@
-import { useId } from "react"
-
-import { Button } from "@/shared/components/ui/button"
-import {
-  Card,
-  CardContent,
-} from "@/shared/components/ui/card"
-import { Input } from "@/shared/components/ui/input"
-import { Label } from "@/shared/components/ui/label"
+import { useId, useState } from "react";
+import { Loader2, SlidersHorizontal, RotateCcw } from "lucide-react";
+import { useVehicleMakes } from "@/entities/vehicle/model/useVehicleMakes";
+import { Button } from "@/shared/components/ui/button";
+import { Input } from "@/shared/components/ui/input";
+import { Label } from "@/shared/components/ui/label";
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from "@/shared/components/ui/select"
-import { cn } from "@/shared/lib/utils"
-import type { FilterState } from "../model/types"
+} from "@/shared/components/ui/select";
+import { cn } from "@/shared/lib/utils";
+import type { FilterState } from "../model/types";
 
 type ProductFiltersFormProps = {
-  state: FilterState
-  onChange: (patch: Partial<FilterState>) => void
-  onReset: () => void
-  onApply: () => void
-  disabled?: boolean
-  isLoading?: boolean
-  className?: string
-}
-
-type NullableOption<T> = T | "all"
-
-const conditionOptions: { label: string; value: NullableOption<FilterState["condition"]> }[] =
-  [
-    { label: "Любое состояние", value: "all" },
-    { label: "Новые", value: "new" },
-    { label: "Б/У", value: "used" },
-  ]
-
-const originalityOptions: {
-  label: string
-  value: NullableOption<FilterState["originality"]>
-}[] = [
-  { label: "Любое происхождение", value: "all" },
-  { label: "Оригинальные (OEM)", value: "oem" },
-  { label: "Аналоги (Aftermarket)", value: "aftermarket" },
-]
+  state: FilterState;
+  onChange: (patch: Partial<FilterState>) => void;
+  onReset: () => void;
+  onApply: () => void;
+  disabled?: boolean;
+  isLoading?: boolean;
+  className?: string;
+  showHeading?: boolean;
+};
 
 export function ProductFiltersForm({
   state,
@@ -53,160 +33,217 @@ export function ProductFiltersForm({
   disabled = false,
   isLoading = false,
   className,
+  showHeading = true,
 }: ProductFiltersFormProps) {
-  const makeId = useId()
-  const priceMinId = useId()
-  const priceMaxId = useId()
-
-  const conditionValue = state.condition ?? "all"
-  const originalityValue = state.originality ?? "all"
-
-  const handleSelectChange = <K extends keyof FilterState>(
-    key: K,
-    value: FilterState[K]
-  ) => {
-    onChange({ [key]: value })
-  }
+  const id = useId();
+  const [makeSearch, setMakeSearch] = useState("");
+  const {
+    data: makes = [],
+    isLoading: makesLoading,
+    isError: makesError,
+    refetch,
+  } = useVehicleMakes({ limit: 100, search: makeSearch.trim() || null });
+  const invalidPrice =
+    state.price_min != null &&
+    state.price_min !== "" &&
+    state.price_max != null &&
+    state.price_max !== "" &&
+    Number(state.price_min) > Number(state.price_max);
 
   return (
-    <Card className={cn("border bg-background/80 shadow-sm backdrop-blur", className)}>
-      <CardContent className="flex justify-center px-4 py-3 sm:px-5 sm:py-4">
-        <form
-          className="flex w-full max-w-[20rem] flex-col gap-3"
-          onSubmit={(event) => {
-            event.preventDefault()
-            if (!disabled) {
-              onApply()
-            }
-          }}
+    <form
+      className={cn("catalog-filters", className)}
+      onSubmit={(event) => {
+        event.preventDefault();
+        if (!disabled && !invalidPrice) onApply();
+      }}
+    >
+      {showHeading && (
+        <div className="filter-heading">
+          <h3>
+            <SlidersHorizontal size={17} aria-hidden="true" /> Фильтры
+          </h3>
+          <button
+            type="button"
+            onClick={onReset}
+            disabled={disabled}
+            aria-label="Сбросить фильтры"
+          >
+            <RotateCcw size={15} aria-hidden="true" />
+          </button>
+        </div>
+      )}
+      <fieldset disabled={disabled} className="filter-section">
+        <legend>Марка автомобиля</legend>
+        <Label htmlFor={`${id}-make-search`} className="sr-only">
+          Поиск марки
+        </Label>
+        <Input
+          id={`${id}-make-search`}
+          placeholder="Найти марку"
+          value={makeSearch}
+          onChange={(event) => setMakeSearch(event.target.value)}
+          className="mb-2"
+        />
+        <Select
+          value={state.make_id?.toString() ?? "all"}
+          onValueChange={(value) =>
+            onChange({ make_id: value === "all" ? null : Number(value) })
+          }
+          disabled={disabled || makesLoading}
         >
-          <div className="grid gap-3">
-            <div className="space-y-1.5">
-              <Label htmlFor={makeId} className="text-xs text-muted-foreground">
-                Бренд/Производитель
-              </Label>
-              <Input
-                id={makeId}
-                placeholder="ID производителя"
-                inputMode="numeric"
-                value={state.make_id ?? ""}
-                onChange={(event) => {
-                  const value = event.target.value
-                  const numericValue = value === "" ? null : Number(value)
-                  onChange({
-                    make_id:
-                      value === "" || Number.isNaN(numericValue)
-                        ? null
-                        : numericValue,
-                  })
-                }}
-                disabled={disabled}
-                className="h-9 text-sm"
-              />
-            </div>
-            <div className="space-y-1.5">
-              <Label className="text-xs text-muted-foreground">Состояние</Label>
-              <Select
-                value={conditionValue}
-                onValueChange={(value) =>
-                  handleSelectChange(
-                    "condition",
-                    value === "all" ? null : (value as FilterState["condition"])
-                  )
-                }
-                disabled={disabled}
-              >
-                <SelectTrigger className="h-9 w-full justify-between text-sm">
-                  <SelectValue placeholder="Состояние" />
-                </SelectTrigger>
-                <SelectContent>
-                  {conditionOptions.map((option) => (
-                    <SelectItem key={option.value ?? "all"} value={option.value ?? "all"}>
-                      {option.label}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-            <div className="space-y-1.5">
-              <Label className="text-xs text-muted-foreground">Оригинальность</Label>
-              <Select
-                value={originalityValue}
-                onValueChange={(value) =>
-                  handleSelectChange(
-                    "originality",
-                    value === "all"
-                      ? null
-                      : (value as FilterState["originality"])
-                  )
-                }
-                disabled={disabled}
-              >
-                <SelectTrigger className="h-9 w-full justify-between text-sm">
-                  <SelectValue placeholder="Оригинальность" />
-                </SelectTrigger>
-                <SelectContent>
-                  {originalityOptions.map((option) => (
-                    <SelectItem key={option.value ?? "all"} value={option.value ?? "all"}>
-                      {option.label}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-            <div className="space-y-1.5">
-              <Label htmlFor={priceMinId} className="text-xs text-muted-foreground">
-                Цена от
-              </Label>
-              <Input
-                id={priceMinId}
-                placeholder="0"
-                inputMode="numeric"
-                value={state.price_min ?? ""}
-                onChange={(event) => {
-                  const value = event.target.value
-                  onChange({ price_min: value })
-                }}
-                disabled={disabled}
-                className="h-9 text-sm"
-              />
-            </div>
-            <div className="space-y-1.5">
-              <Label htmlFor={priceMaxId} className="text-xs text-muted-foreground">
-                Цена до
-              </Label>
-              <Input
-                id={priceMaxId}
-                placeholder="100000"
-                inputMode="numeric"
-                value={state.price_max ?? ""}
-                onChange={(event) => onChange({ price_max: event.target.value })}
-                disabled={disabled}
-                className="h-9 text-sm"
-              />
-            </div>
+          <SelectTrigger
+            id={`${id}-make`}
+            className="w-full"
+            aria-label="Марка автомобиля"
+          >
+            <SelectValue
+              placeholder={makesLoading ? "Загружаем марки…" : "Все марки"}
+            />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all">Все марки</SelectItem>
+            {state.make_id != null &&
+              !makes.some((make) => make.makeId === state.make_id) && (
+                <SelectItem value={String(state.make_id)}>
+                  Выбранная марка
+                </SelectItem>
+              )}
+            {makes.map((make) => (
+              <SelectItem key={make.makeId} value={String(make.makeId)}>
+                {make.makeName}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+        {makesError && (
+          <button
+            type="button"
+            className="mt-2 text-xs text-destructive underline"
+            onClick={() => refetch()}
+          >
+            Не удалось загрузить. Повторить
+          </button>
+        )}
+      </fieldset>
+      <fieldset disabled={disabled} className="filter-section">
+        <legend>Цена</legend>
+        <div className="grid grid-cols-2 gap-2">
+          <div>
+            <Label htmlFor={`${id}-min`} className="sr-only">
+              Цена от
+            </Label>
+            <Input
+              id={`${id}-min`}
+              type="number"
+              min="0"
+              step="any"
+              placeholder="От"
+              value={state.price_min ?? ""}
+              onChange={(event) =>
+                onChange({
+                  price_min:
+                    event.target.value === "" ? "" : Number(event.target.value),
+                })
+              }
+              aria-invalid={invalidPrice}
+            />
           </div>
-
-          <div className="flex items-center justify-center gap-2">
-            <Button
-              type="button"
-              variant="outline"
-              size="sm"
-              onClick={onReset}
-              disabled={disabled || isLoading}
-            >
-              Сбросить
-            </Button>
-            <Button
-              type="submit"
-              size="sm"
-              disabled={disabled || isLoading}
-            >
-              Применить
-            </Button>
+          <div>
+            <Label htmlFor={`${id}-max`} className="sr-only">
+              Цена до
+            </Label>
+            <Input
+              id={`${id}-max`}
+              type="number"
+              min="0"
+              step="any"
+              placeholder="До"
+              value={state.price_max ?? ""}
+              onChange={(event) =>
+                onChange({
+                  price_max:
+                    event.target.value === "" ? "" : Number(event.target.value),
+                })
+              }
+              aria-invalid={invalidPrice}
+            />
           </div>
-        </form>
-      </CardContent>
-    </Card>
-  )
+        </div>
+        <p className="filter-hint">В валюте предложения</p>
+        {invalidPrice && (
+          <p role="alert" className="mt-2 text-xs text-destructive">
+            Цена «от» должна быть меньше цены «до».
+          </p>
+        )}
+      </fieldset>
+      <fieldset disabled={disabled} className="filter-section">
+        <legend>Состояние</legend>
+        {(
+          [
+            { value: "all", label: "Любое" },
+            { value: "new", label: "Новые" },
+            { value: "used", label: "С пробегом" },
+          ] as const
+        ).map((option) => (
+          <label className="filter-radio" key={option.value}>
+            <input
+              type="radio"
+              name={`${id}-condition`}
+              checked={(state.condition ?? "all") === option.value}
+              onChange={() =>
+                onChange({
+                  condition: option.value === "all" ? null : option.value,
+                })
+              }
+            />
+            <span>{option.label}</span>
+          </label>
+        ))}
+      </fieldset>
+      <fieldset disabled={disabled} className="filter-section">
+        <legend>Тип запчасти</legend>
+        {(
+          [
+            { value: "all", label: "Все запчасти" },
+            { value: "oem", label: "Оригинальные (OEM)" },
+            { value: "aftermarket", label: "Аналоги" },
+          ] as const
+        ).map((option) => (
+          <label className="filter-radio" key={option.value}>
+            <input
+              type="radio"
+              name={`${id}-originality`}
+              checked={(state.originality ?? "all") === option.value}
+              onChange={() =>
+                onChange({
+                  originality: option.value === "all" ? null : option.value,
+                })
+              }
+            />
+            <span>{option.label}</span>
+          </label>
+        ))}
+      </fieldset>
+      <div className="filter-actions">
+        <Button
+          type="submit"
+          disabled={disabled || isLoading || invalidPrice}
+          className="w-full"
+        >
+          {isLoading && <Loader2 className="size-4 animate-spin" />}Показать
+          запчасти
+        </Button>
+        <Button
+          type="button"
+          variant="ghost"
+          className="w-full"
+          onClick={onReset}
+          disabled={disabled}
+        >
+          Сбросить всё
+        </Button>
+      </div>
+    </form>
+  );
 }

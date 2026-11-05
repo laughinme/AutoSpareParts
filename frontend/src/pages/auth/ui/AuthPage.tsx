@@ -1,11 +1,10 @@
-import { useEffect, useState, type FormEvent, type ReactElement } from "react";
-import { AnimatePresence, motion } from "motion/react";
-import { IconBrandGithub } from "@tabler/icons-react";
+import { useState, type FormEvent, type ReactElement } from "react";
+import { Brand } from "@/shared/components/brand";
+import { RepositoryLink } from "@/shared/components/repository-link";
 import { useAuth } from "@/app/providers/auth/useAuth";
 import type { AuthCredentials } from "@/entities/auth/model";
 import { LoginForm } from "@/features/auth/login-form";
 import { SignupForm } from "@/features/auth/signup-form";
-import { Button } from "@/shared/components/ui/button";
 
 type Mode = "login" | "register";
 
@@ -23,7 +22,8 @@ const getErrorMessage = (error: unknown): string => {
   }
 
   if (typeof error === "object" && error !== null && "response" in error) {
-    const response = (error as { response?: { data?: { detail?: unknown } } }).response;
+    const response = (error as { response?: { data?: { detail?: unknown } } })
+      .response;
     const detail = response?.data?.detail;
     if (typeof detail === "string") {
       return detail;
@@ -37,40 +37,39 @@ export default function AuthPage(): ReactElement {
   const [mode, setMode] = useState<Mode>("login");
   const [email, setEmail] = useState<string>("");
   const [password, setPassword] = useState<string>("");
-  const [isVisible, setIsVisible] = useState<boolean>(false);
 
   const auth = useAuth();
-
-  useEffect(() => {
-    setIsVisible(true);
-  }, []);
 
   if (!auth) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-red-50 text-slate-700">
         <div className="rounded-2xl border border-red-200 bg-white p-6 shadow-lg">
-          <h2 className="text-2xl font-semibold text-red-500">Контекст аутентификации не найден</h2>
-          <p className="mt-2">Убедитесь, что используете компонент внутри `AuthProvider`.</p>
+          <h2 className="text-2xl font-semibold text-red-500">
+            Контекст аутентификации не найден
+          </h2>
+          <p className="mt-2">
+            Убедитесь, что используете компонент внутри `AuthProvider`.
+          </p>
         </div>
       </div>
     );
   }
 
-  const { login, register, isLoggingIn, loginError, isRegistering, registerError } = auth;
+  const {
+    login,
+    register,
+    isLoggingIn,
+    loginError,
+    isRegistering,
+    registerError,
+  } = auth;
 
   const isLoading = isLoggingIn || isRegistering;
   const error = mode === "login" ? loginError : registerError;
   const errorMessage = error ? getErrorMessage(error) : null;
   const canSubmit = Boolean(email.trim() && password.trim() && !isLoading);
 
-  const submit = async (event: FormEvent<HTMLFormElement>) => {
-    event.preventDefault();
-    if (!canSubmit) {
-      return;
-    }
-
-    const credentials: AuthCredentials = { email: email.trim(), password };
-
+  const authenticate = async (credentials: AuthCredentials) => {
     try {
       if (mode === "login") {
         await login(credentials);
@@ -82,109 +81,64 @@ export default function AuthPage(): ReactElement {
     }
   };
 
-  const handleDemoLogin = async (demoEmail: string, demoPassword: string) => {
-    if (isLoading || mode !== "login") {
-      return;
-    }
+  const submit = (event: FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    if (canSubmit) void authenticate({ email: email.trim(), password });
+  };
 
+  const handleDemoLogin = async (demoEmail: string, demoPassword: string) => {
+    if (isLoading) return;
     setEmail(demoEmail);
     setPassword(demoPassword);
+    await authenticate({ email: demoEmail, password: demoPassword });
+  };
 
-    try {
-      await login({ email: demoEmail.trim(), password: demoPassword });
-    } catch (err) {
-      console.error("Ошибка демо-логина:", err);
-    }
+  const formProps = {
+    email,
+    password,
+    onEmailChange: setEmail,
+    onPasswordChange: setPassword,
+    onSubmit: submit,
+    disabled: isLoading,
+    submitDisabled: !canSubmit,
+    errorMessage,
   };
 
   return (
-    <div className="relative min-h-screen bg-neutral-950 flex items-center justify-center px-4 py-12 text-white overflow-hidden">
-      <div className="absolute right-4 top-4 z-10">
-        <Button
-          asChild
-          variant="ghost"
-          size="sm"
-          className="text-neutral-200 hover:text-white"
-        >
-          <a
-            href="https://github.com/laughinme/AutoSpareParts"
-            target="_blank"
-            rel="noreferrer"
-            aria-label="Открыть репозиторий проекта на GitHub"
-          >
-            <IconBrandGithub className="size-4" />
-            <span className="hidden sm:inline">GitHub</span>
-          </a>
-        </Button>
-      </div>
-
-      <motion.div
-        className="absolute inset-0 pointer-events-none"
-        initial={{ opacity: 0 }}
-        animate={{ opacity: 0.35 }}
-        transition={{ duration: 1.2, ease: "easeOut" }}
+    <main className="auth-page">
+      <aside className="auth-story">
+        <Brand compact />
+        <img src="/marketplace/brake-assembly.jpg" alt="" className="auth-art" />
+        <div className="auth-story-copy">
+          <p className="auth-story-title">Всё дело<br />в деталях.</p>
+          <p>Каталог автозапчастей, заказы и личный гараж в одном аккаунте.</p>
+        </div>
+      </aside>
+      <section
+        className="auth-form-panel"
+        aria-label={mode === "login" ? "Вход в аккаунт" : "Регистрация"}
       >
-        <motion.div
-          className="absolute inset-0 bg-[radial-gradient(circle_at_top,_rgba(255,255,255,0.08),_rgba(0,0,0,0))]"
-          initial={{ scale: 0.9, opacity: 0 }}
-          animate={{ scale: 1, opacity: 1 }}
-          transition={{ duration: 1.2, ease: "easeOut" }}
-        />
-      </motion.div>
-
-      <motion.div
-        className="relative w-full max-w-md"
-        initial={{ opacity: 0, y: 32, scale: 0.96 }}
-        animate={isVisible ? { opacity: 1, y: 0, scale: 1 } : { opacity: 0, y: 32, scale: 0.96 }}
-        transition={{ duration: 0.6, ease: "easeOut" }}
-      >
-        <AnimatePresence mode="wait">
+        <RepositoryLink className="auth-repository-link" />
+        <div className="auth-form-wrap">
+          <div className="auth-mobile-brand">
+            <Brand />
+          </div>
           {mode === "login" ? (
-            <motion.div
-              key="login"
-              initial={{ opacity: 0, y: 24, scale: 0.98 }}
-              animate={{ opacity: 1, y: 0, scale: 1 }}
-              exit={{ opacity: 0, y: -16, scale: 0.98 }}
-              transition={{ duration: 0.4, ease: "easeOut" }}
-            >
-              <LoginForm
-                email={email}
-                password={password}
-                onEmailChange={setEmail}
-                onPasswordChange={setPassword}
-                onSubmit={submit}
-                onDemoLogin={handleDemoLogin}
-                submitLabel={isLoading ? "Загрузка..." : "Login"}
-                disabled={isLoading}
-                submitDisabled={!canSubmit}
-                errorMessage={errorMessage}
-                onSwitchToSignup={() => setMode("register")}
-              />
-            </motion.div>
+            <LoginForm
+              {...formProps}
+              onDemoLogin={handleDemoLogin}
+              submitLabel={isLoading ? "Входим…" : "Войти"}
+              onSwitchToSignup={() => setMode("register")}
+            />
           ) : (
-            <motion.div
-              key="signup"
-              initial={{ opacity: 0, y: 24, scale: 0.98 }}
-              animate={{ opacity: 1, y: 0, scale: 1 }}
-              exit={{ opacity: 0, y: -16, scale: 0.98 }}
-              transition={{ duration: 0.4, ease: "easeOut" }}
-            >
-              <SignupForm
-                email={email}
-                password={password}
-                onEmailChange={setEmail}
-                onPasswordChange={setPassword}
-                onSubmit={submit}
-                submitLabel={isLoading ? "Загрузка..." : "Create Account"}
-                disabled={isLoading}
-                submitDisabled={!canSubmit}
-                errorMessage={errorMessage}
-                onSwitchToLogin={() => setMode("login")}
-              />
-            </motion.div>
+            <SignupForm
+              {...formProps}
+              submitLabel={isLoading ? "Создаём аккаунт…" : "Создать аккаунт"}
+              onSwitchToLogin={() => setMode("login")}
+            />
           )}
-        </AnimatePresence>
-      </motion.div>
-    </div>
+        </div>
+      </section>
+    </main>
   );
 }

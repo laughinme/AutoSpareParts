@@ -1,24 +1,31 @@
-import { ImageIcon, Loader2, Minus, Plus } from "lucide-react"
-import { Link } from "react-router-dom"
-
-import { buildProductDetailsPath } from "@/app/routes"
-import type { Product } from "@/entities/product/model/types"
-import { Badge } from "@/shared/components/ui/badge"
-import { Button } from "@/shared/components/ui/button"
+import { useState } from "react";
 import {
-  Card,
-  CardContent,
-  CardFooter,
-} from "@/shared/components/ui/card"
+  Package,
+  Loader2,
+  Minus,
+  Plus,
+  ShoppingBag,
+  ArrowUpRight,
+} from "lucide-react";
+import { Link } from "react-router-dom";
+import { buildProductDetailsPath } from "@/app/routes";
+import type { Product } from "@/entities/product/model/types";
+import { Button } from "@/shared/components/ui/button";
 
 type ProductCardProps = {
-  product: Product
-  quantity?: number
-  onAddToCart?: () => void
-  onIncrement?: () => void
-  onDecrement?: () => void
-  isMutating?: boolean
-}
+  product: Product;
+  quantity?: number;
+  onAddToCart?: () => void;
+  onIncrement?: () => void;
+  onDecrement?: () => void;
+  isMutating?: boolean;
+};
+
+const conditionNames: Record<string, string> = {
+  new: "Новая",
+  used: "Б/у",
+  refurbished: "Восстановленная",
+};
 
 export function ProductCard({
   product,
@@ -28,139 +35,118 @@ export function ProductCard({
   onDecrement,
   isMutating = false,
 }: ProductCardProps) {
-  const priceLabel = (() => {
-    if (!Number.isFinite(product.price)) {
-      return "—"
-    }
-
+  const [failedImage, setFailedImage] = useState<string | null>(null);
+  let priceLabel = "Цена не указана";
+  if (Number.isFinite(product.price)) {
     try {
-      return new Intl.NumberFormat("en-US", {
+      priceLabel = new Intl.NumberFormat("ru-RU", {
         style: "currency",
         currency: product.currency ?? "USD",
-        maximumFractionDigits: 0,
-      }).format(product.price)
+        minimumFractionDigits: 0,
+        maximumFractionDigits: 2,
+      }).format(product.price);
     } catch {
-      return Number(product.price).toLocaleString()
+      priceLabel = product.price.toLocaleString("ru-RU");
     }
-  })()
-
-  const conditionLabel = product.condition
-    ? product.condition.replace(/_/g, " ")
-    : null
-  const stockLabel = Number.isFinite(product.qty) ? product.qty : "—"
-
-  const isInCart = quantity > 0
-  const isMinusDisabled = isMutating || quantity <= 0 || !onDecrement
-  const isPlusDisabled = isMutating || !onIncrement
-  const isAddDisabled = isMutating || !onAddToCart
-
+  }
+  const outOfStock = product.qty <= 0;
   return (
-    <Card className="group overflow-hidden transition-shadow hover:shadow-md focus-within:ring-2 focus-within:ring-ring focus-within:ring-offset-2 focus-within:ring-offset-background">
+    <article className="product-card">
       <Link
         to={buildProductDetailsPath(product.id)}
-        className="relative block aspect-[4/3] w-full overflow-hidden border-b bg-gradient-to-br from-muted/70 via-muted to-muted/60 focus:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background"
+        className="product-image"
+        aria-label={`Подробнее: ${product.title}`}
       >
-        {product.imageUrl ? (
+        {product.imageUrl && failedImage !== product.imageUrl ? (
           <img
             src={product.imageUrl}
             alt={product.title}
-            className="h-full w-full object-cover transition-transform duration-300 group-hover:scale-105"
             loading="lazy"
+            onError={() => setFailedImage(product.imageUrl ?? null)}
           />
         ) : (
-          <div className="flex h-full w-full items-center justify-center text-muted-foreground">
-            <ImageIcon className="size-10" aria-hidden />
-            <span className="sr-only">Нет изображения</span>
+          <div className="product-no-image">
+            <Package size={32} strokeWidth={1.25} aria-hidden="true" />
+            <span>Фото отсутствует</span>
           </div>
         )}
-
-        {conditionLabel && (
-          <Badge
-            variant="secondary"
-            className="absolute left-3 top-3 bg-background/90 text-[0.65rem] font-semibold uppercase tracking-wide shadow-sm backdrop-blur"
-          >
-            {conditionLabel}
-          </Badge>
+        {product.condition && (
+          <span className="condition-tag">
+            {conditionNames[product.condition] ??
+              product.condition.replace(/_/g, " ")}
+          </span>
         )}
+        <span className="product-open" aria-hidden="true">
+          <ArrowUpRight size={17} />
+        </span>
       </Link>
-      <CardContent className="space-y-2 px-5 py-4">
+      <div className="product-info">
+        <div className="product-price">{priceLabel}</div>
         <Link
           to={buildProductDetailsPath(product.id)}
-          className="block text-base font-semibold leading-tight tracking-tight line-clamp-2 text-foreground transition-colors hover:text-primary focus:outline-none focus-visible:underline"
+          className="product-title"
         >
           {product.title}
         </Link>
-      </CardContent>
-      <CardFooter className="flex items-end justify-between gap-3 border-t px-5 py-4">
-        <div className="flex flex-col gap-1">
-          <span className="text-xs uppercase tracking-wide text-muted-foreground">
-            Цена
-          </span>
-          <span className="text-lg font-semibold leading-none">
-            {priceLabel}
-          </span>
-          <span className="text-xs text-muted-foreground">
-            В наличии:&nbsp;
-            <span className="font-semibold text-foreground">
-              {stockLabel}
+        <p className="product-stock">
+          <span className={outOfStock ? "unavailable" : ""} />
+          {outOfStock
+            ? "Нет в наличии"
+            : Number.isFinite(product.qty)
+              ? `В наличии · ${product.qty.toLocaleString("ru-RU")} шт.`
+              : "Уточняйте наличие"}
+        </p>
+        {quantity > 0 ? (
+          <div
+            className="quantity-control"
+            aria-label="Количество в корзине"
+            aria-live="polite"
+          >
+            <Button
+              type="button"
+              variant="ghost"
+              size="icon"
+              onClick={onDecrement}
+              disabled={isMutating || !onDecrement}
+              aria-label={`Уменьшить количество: ${product.title}`}
+            >
+              <Minus size={16} />
+            </Button>
+            <span>
+              {isMutating ? (
+                <Loader2 className="size-4 animate-spin" />
+              ) : (
+                quantity
+              )}
             </span>
-          </span>
-        </div>
-        {isInCart ? (
-          <div className="flex flex-col items-center gap-1">
-            <div className="flex items-center gap-2">
-              <Button
-                type="button"
-                variant="outline"
-                size="icon"
-                className="size-8"
-                onClick={onDecrement}
-                disabled={isMinusDisabled}
-                aria-label="Уменьшить количество"
-              >
-                <Minus className="size-4" aria-hidden />
-              </Button>
-              <div className="flex h-9 w-12 items-center justify-center rounded-md border bg-muted text-sm font-semibold">
-                {isMutating ? (
-                  <Loader2 className="size-4 animate-spin" aria-hidden />
-                ) : (
-                  quantity
-                )}
-              </div>
-              <Button
-                type="button"
-                variant="outline"
-                size="icon"
-                className="size-8"
-                onClick={onIncrement}
-                disabled={isPlusDisabled}
-                aria-label="Увеличить количество"
-              >
-                <Plus className="size-4" aria-hidden />
-              </Button>
-            </div>
-            <span className="text-[0.7rem] uppercase tracking-wide text-muted-foreground">
-              В корзине:&nbsp;
-              <span className="font-semibold text-foreground">
-                {quantity}
-              </span>
-            </span>
+            <Button
+              type="button"
+              variant="ghost"
+              size="icon"
+              onClick={onIncrement}
+              disabled={isMutating || !onIncrement || quantity >= product.qty}
+              aria-label={`Увеличить количество: ${product.title}`}
+            >
+              <Plus size={16} />
+            </Button>
           </div>
         ) : (
           <Button
             type="button"
-            size="sm"
-            className="shrink-0"
+            className="product-add"
+            variant="outline"
             onClick={onAddToCart}
-            disabled={isAddDisabled}
+            disabled={isMutating || !onAddToCart || outOfStock}
           >
-            {isMutating && (
-              <Loader2 className="mr-2 size-4 animate-spin" aria-hidden />
+            {isMutating ? (
+              <Loader2 className="size-4 animate-spin" />
+            ) : (
+              <ShoppingBag size={16} />
             )}
-            В корзину
+            {outOfStock ? "Недоступно" : "В корзину"}
           </Button>
         )}
-      </CardFooter>
-    </Card>
-  )
+      </div>
+    </article>
+  );
 }

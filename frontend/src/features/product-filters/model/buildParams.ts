@@ -3,11 +3,6 @@ import type { CatalogParams } from "@/entities/product/api"
 
 const DEFAULT_LIMIT = 20
 
-const stripEmpty = (o: Record<string, any>) =>
-  Object.fromEntries(
-    Object.entries(o).filter(([, v]) => v !== undefined && v !== null && v !== '')
-  )
-
 export function buildParams(state: FilterState): CatalogParams {
   const q = state.q?.trim()
 
@@ -25,14 +20,14 @@ export function buildParams(state: FilterState): CatalogParams {
   }
 
   const params: CatalogParams = {
-    q: q ? q : null,
-    make_id: state.make_id ?? null,
-    condition: state.condition ?? null,
-    originality: state.originality ?? null,
-    price_min: priceMin,
-    price_max: priceMax,
+    q: q || undefined,
+    make_id: state.make_id ?? undefined,
+    condition: state.condition ?? undefined,
+    originality: state.originality ?? undefined,
+    price_min: priceMin ?? undefined,
+    price_max: priceMax ?? undefined,
     limit: DEFAULT_LIMIT,
   }
 
-  return stripEmpty(params) as CatalogParams
+  return params
 }

@@ -150,13 +150,13 @@ export function BuyerOrdersWidget() {
 
   return (
     <div className="flex flex-col gap-6">
-      <section className="rounded-2xl border bg-card/50 p-4 shadow-xs">
-        <div className="flex flex-wrap items-center gap-3">
-          <div className="flex items-center gap-2 text-sm font-semibold uppercase tracking-wider text-muted-foreground">
+      <section className="order-controls rounded-xl border bg-card p-4" aria-label="Фильтры заказов">
+        <div className="order-status-controls">
+          <div className="flex items-center gap-2 text-sm font-bold">
             <Filter className="size-4" aria-hidden />
             Статусы
           </div>
-          <div className="flex flex-1 flex-wrap gap-2">
+          <div className="flex flex-1 flex-wrap gap-2" role="group" aria-label="Статусы заказов">
             <Button
               variant={selectedStatuses.length === 0 ? "default" : "outline"}
               size="sm"
@@ -188,9 +188,9 @@ export function BuyerOrdersWidget() {
         <Separator className="my-4" />
 
         <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
-          <div className="flex flex-wrap items-center gap-3">
+          <div className="order-list-controls flex flex-wrap items-center gap-2">
             <Select value={orderBy} onValueChange={(value) => handleSortChange(value as OrderSort)}>
-              <SelectTrigger size="sm" className="w-48">
+              <SelectTrigger size="sm" className="w-48" aria-label="Сортировка заказов">
                 <SelectValue placeholder="Сортировка" />
               </SelectTrigger>
               <SelectContent>
@@ -203,7 +203,7 @@ export function BuyerOrdersWidget() {
             </Select>
 
             <Select value={String(limit)} onValueChange={handleLimitChange}>
-              <SelectTrigger size="sm" className="w-32">
+              <SelectTrigger size="sm" className="w-32" aria-label="Заказов на странице">
                 <SelectValue placeholder="Лимит" />
               </SelectTrigger>
               <SelectContent>

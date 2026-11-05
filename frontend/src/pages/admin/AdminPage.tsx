@@ -1,7 +1,7 @@
-import { useEffect, useMemo, useState, type ComponentType } from "react"
-import { Link } from "react-router-dom"
-import { Loader2 } from "lucide-react"
-import { toast } from "sonner"
+import { useEffect, useMemo, useState, type ComponentType } from "react";
+import { Link } from "react-router-dom";
+import { Loader2 } from "lucide-react";
+import { toast } from "sonner";
 import {
   IconArrowUpRight,
   IconRefresh,
@@ -10,16 +10,16 @@ import {
   IconUserCheck,
   IconUserOff,
   IconUsers,
-} from "@tabler/icons-react"
+} from "@tabler/icons-react";
 
-import { useAuth } from "@/app/providers/auth/useAuth"
-import { ROUTE_PATHS } from "@/app/routes"
-import { isAdminUser } from "@/entities/auth/lib/roles"
-import type { AdminUserDto } from "@/entities/admin/api"
-import { useAdminUsers } from "@/entities/admin/model/useAdminUsers"
-import { useAdminBanUser } from "@/entities/admin/model/useAdminBanUser"
-import { Badge } from "@/shared/components/ui/badge"
-import { Button } from "@/shared/components/ui/button"
+import { useAuth } from "@/app/providers/auth/useAuth";
+import { ROUTE_PATHS } from "@/app/routes";
+import { isAdminUser } from "@/entities/auth/lib/roles";
+import type { AdminUserDto } from "@/entities/admin/api";
+import { useAdminUsers } from "@/entities/admin/model/useAdminUsers";
+import { useAdminBanUser } from "@/entities/admin/model/useAdminBanUser";
+import { Badge } from "@/shared/components/ui/badge";
+import { Button } from "@/shared/components/ui/button";
 import {
   Card,
   CardAction,
@@ -28,15 +28,15 @@ import {
   CardFooter,
   CardHeader,
   CardTitle,
-} from "@/shared/components/ui/card"
-import { Input } from "@/shared/components/ui/input"
+} from "@/shared/components/ui/card";
+import { Input } from "@/shared/components/ui/input";
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from "@/shared/components/ui/select"
+} from "@/shared/components/ui/select";
 import {
   Table,
   TableBody,
@@ -44,50 +44,50 @@ import {
   TableHead,
   TableHeader,
   TableRow,
-} from "@/shared/components/ui/table"
+} from "@/shared/components/ui/table";
 import {
   Avatar,
   AvatarFallback,
   AvatarImage,
-} from "@/shared/components/ui/avatar"
+} from "@/shared/components/ui/avatar";
 import {
   ToggleGroup,
   ToggleGroupItem,
-} from "@/shared/components/ui/toggle-group"
-import { cn } from "@/shared/lib/utils"
+} from "@/shared/components/ui/toggle-group";
+import { cn } from "@/shared/lib/utils";
 
 const formatDate = (value: string | null | undefined) => {
-  if (!value) return "—"
-  const date = new Date(value)
+  if (!value) return "—";
+  const date = new Date(value);
   if (Number.isNaN(date.getTime())) {
-    return value
+    return value;
   }
   return date.toLocaleDateString("ru-RU", {
     day: "2-digit",
     month: "short",
     year: "numeric",
-  })
-}
+  });
+};
 
 const getInitials = (user: AdminUserDto) => {
-  const seed = user.username?.trim() || user.email?.trim() || "US"
+  const seed = user.username?.trim() || user.email?.trim() || "US";
   return seed
     .split(" ")
     .map((part) => part[0])
     .join("")
     .slice(0, 2)
-    .toUpperCase()
-}
+    .toUpperCase();
+};
 
 const getErrorMessage = (error: unknown, fallback: string) => {
   if (error && typeof error === "object" && "message" in error) {
-    const message = (error as { message?: string }).message
+    const message = (error as { message?: string }).message;
     if (message) {
-      return message
+      return message;
     }
   }
-  return fallback
-}
+  return fallback;
+};
 
 function MetricCell({
   label,
@@ -95,109 +95,87 @@ function MetricCell({
   hint,
   icon: Icon,
 }: {
-  label: string
-  value: number | string
-  hint?: string
-  icon: ComponentType<{ className?: string }>
+  label: string;
+  value: number | string;
+  hint?: string;
+  icon: ComponentType<{ className?: string }>;
 }) {
   return (
-    <div className="flex items-center justify-between gap-4 rounded-xl border border-border/60 bg-card p-4 shadow-sm">
+    <div className="admin-metric">
       <div className="min-w-0">
-        <p className="text-xs font-medium text-muted-foreground">
-          {label}
-        </p>
-        <p className="mt-1 text-2xl font-semibold tabular-nums">
-          {value}
-        </p>
-        {hint ? (
-          <p className="mt-1 text-xs text-muted-foreground">
-            {hint}
-          </p>
-        ) : null}
+        <p>{label}</p>
+        <p className="metric-value tabular-nums">{value}</p>
+        {hint && <p className="mt-1 text-xs text-muted-foreground">{hint}</p>}
       </div>
-      <div
-        className={cn(
-          "flex size-10 shrink-0 items-center justify-center rounded-xl border border-border/60 bg-muted text-muted-foreground",
-        )}
-      >
-        <Icon className="size-5 text-muted-foreground" />
-      </div>
+      <Icon aria-hidden="true" />
     </div>
-  )
+  );
 }
 
 export default function AdminPage() {
-  const auth = useAuth()
-  const user = auth?.user ?? null
-  const isAdmin = isAdminUser(user)
+  const auth = useAuth();
+  const user = auth?.user ?? null;
+  const isAdmin = isAdminUser(user);
 
-  const [searchInput, setSearchInput] = useState("")
-  const [search, setSearch] = useState<string | null>(null)
+  const [searchInput, setSearchInput] = useState("");
+  const [search, setSearch] = useState<string | null>(null);
   const [bannedFilter, setBannedFilter] = useState<"all" | "banned" | "active">(
     "all",
-  )
-  const [limit, setLimit] = useState("50")
-  const [pendingUserId, setPendingUserId] = useState<string | null>(null)
+  );
+  const [limit, setLimit] = useState("50");
+  const [pendingUserId, setPendingUserId] = useState<string | null>(null);
 
   useEffect(() => {
     const handler = window.setTimeout(() => {
-      const trimmed = searchInput.trim()
-      setSearch(trimmed.length > 0 ? trimmed : null)
-    }, 400)
+      const trimmed = searchInput.trim();
+      setSearch(trimmed.length > 0 ? trimmed : null);
+    }, 400);
 
-    return () => window.clearTimeout(handler)
-  }, [searchInput])
+    return () => window.clearTimeout(handler);
+  }, [searchInput]);
 
   const banned =
-    bannedFilter === "all"
-      ? null
-      : bannedFilter === "banned"
-        ? true
-        : false
+    bannedFilter === "all" ? null : bannedFilter === "banned" ? true : false;
 
   const usersQuery = useAdminUsers({
     banned,
     search,
     limit: Number(limit),
     enabled: isAdmin,
-  })
+  });
 
-  const banMutation = useAdminBanUser()
+  const banMutation = useAdminBanUser();
 
   const users = useMemo(
     () => usersQuery.data?.pages.flatMap((page) => page.items) ?? [],
     [usersQuery.data],
-  )
+  );
 
-  const totalLoaded = users.length
-  const bannedCount = users.filter((item) => item.banned).length
-  const activeCount = totalLoaded - bannedCount
-  const onboardedCount = users.filter((item) => item.is_onboarded).length
+  const totalLoaded = users.length;
+  const bannedCount = users.filter((item) => item.banned).length;
+  const activeCount = totalLoaded - bannedCount;
 
-  const isRefreshing =
-    usersQuery.isFetching || usersQuery.isFetchingNextPage
+  const isRefreshing = usersQuery.isFetching || usersQuery.isFetchingNextPage;
 
   const handleBanToggle = (target: AdminUserDto) => {
-    setPendingUserId(target.id)
+    setPendingUserId(target.id);
     banMutation.mutate(
       { userId: target.id, banned: !target.banned },
       {
         onSuccess: () => {
           toast.success(
-            target.banned ? "Пользователь разбанен" : "Пользователь забанен",
-          )
+            target.banned ? "Доступ восстановлен" : "Пользователь заблокирован",
+          );
         },
         onError: (error) => {
-          toast.error(
-            getErrorMessage(error, "Не удалось обновить статус"),
-          )
+          toast.error(getErrorMessage(error, "Не удалось обновить статус"));
         },
         onSettled: () => {
-          setPendingUserId(null)
+          setPendingUserId(null);
         },
       },
-    )
-  }
+    );
+  };
 
   if (!isAdmin) {
     return (
@@ -209,17 +187,18 @@ export default function AdminPage() {
             </div>
             <h1 className="mt-4 text-2xl font-semibold">Доступ запрещён</h1>
             <p className="mt-2 text-sm text-muted-foreground">
-              Эта страница доступна только администраторам. Перейдите в пользовательский интерфейс.
+              Эта страница доступна только администраторам. Перейдите в
+              пользовательский интерфейс.
             </p>
             <div className="mt-6 flex justify-center">
               <Button asChild>
-                <Link to={ROUTE_PATHS.buyer.fyp}>Перейти на FYP</Link>
+                <Link to={ROUTE_PATHS.buyer.fyp}>Перейти в каталог</Link>
               </Button>
             </div>
           </div>
         </div>
       </div>
-    )
+    );
   }
 
   return (
@@ -228,17 +207,17 @@ export default function AdminPage() {
         <header className="flex flex-col gap-3 md:flex-row md:items-end md:justify-between">
           <div className="min-w-0">
             <h1 className="text-2xl font-semibold tracking-tight">
-              Админ Панель
+              Управление маркетплейсом
             </h1>
             <p className="mt-1 text-sm text-muted-foreground">
-              Управление пользователями и регистрациями
+              Пользователи, доступ и состояние аккаунтов — под контролем.
             </p>
           </div>
 
           <div className="flex flex-wrap items-center gap-2">
             <Button asChild variant="outline" size="sm">
               <Link to={ROUTE_PATHS.buyer.fyp}>
-                Вернуться на FYP
+                Открыть каталог
                 <IconArrowUpRight className="size-4" />
               </Link>
             </Button>
@@ -247,7 +226,7 @@ export default function AdminPage() {
               variant="outline"
               size="sm"
               onClick={() => {
-                usersQuery.refetch()
+                usersQuery.refetch();
               }}
               disabled={isRefreshing}
             >
@@ -261,14 +240,14 @@ export default function AdminPage() {
           </div>
         </header>
 
-        <section className="grid grid-cols-1 gap-3 sm:grid-cols-2 md:grid-cols-3">
+        <section className="admin-metrics">
           <MetricCell
             label="Пользователи"
             value={totalLoaded}
             icon={IconUsers}
           />
           <MetricCell
-            label="В бане"
+            label="Заблокированы"
             value={bannedCount}
             icon={IconUserOff}
           />
@@ -280,12 +259,12 @@ export default function AdminPage() {
         </section>
 
         <section className="flex flex-col gap-6">
-          <Card className="overflow-hidden border-border/60 shadow-sm">
+          <Card className="admin-users-card overflow-hidden border-border shadow-none">
             <CardHeader className="gap-3">
               <div className="flex flex-col gap-1">
                 <CardTitle>Пользователи</CardTitle>
                 <CardDescription>
-                  Поиск, фильтры и бан/разбан
+                  Находите пользователей и управляйте доступом
                 </CardDescription>
               </div>
               <CardAction>
@@ -293,6 +272,7 @@ export default function AdminPage() {
                   type="button"
                   variant="outline"
                   size="sm"
+                  aria-label="Обновить пользователей"
                   onClick={() => usersQuery.refetch()}
                   disabled={usersQuery.isFetching}
                 >
@@ -310,7 +290,8 @@ export default function AdminPage() {
                   <Input
                     value={searchInput}
                     onChange={(event) => setSearchInput(event.target.value)}
-                    placeholder="Поиск по username или email"
+                    placeholder="Имя или электронная почта"
+                    aria-label="Поиск пользователей"
                     className="h-8 pl-9"
                   />
                 </div>
@@ -321,12 +302,14 @@ export default function AdminPage() {
                   size="sm"
                   value={bannedFilter}
                   onValueChange={(value) => {
-                    if (value) setBannedFilter(value as typeof bannedFilter)
+                    if (value) setBannedFilter(value as typeof bannedFilter);
                   }}
                 >
                   <ToggleGroupItem value="all">Все</ToggleGroupItem>
                   <ToggleGroupItem value="active">Активные</ToggleGroupItem>
-                  <ToggleGroupItem value="banned">В бане</ToggleGroupItem>
+                  <ToggleGroupItem value="banned">
+                    Заблокированы
+                  </ToggleGroupItem>
                 </ToggleGroup>
 
                 <Select value={limit} onValueChange={setLimit}>
@@ -344,7 +327,9 @@ export default function AdminPage() {
                   {usersQuery.isFetching ? (
                     <Loader2 className="size-3.5 animate-spin" />
                   ) : null}
-                  {usersQuery.isFetching ? "Обновляем…" : `Показано: ${totalLoaded}`}
+                  {usersQuery.isFetching
+                    ? "Обновляем…"
+                    : `Показано: ${totalLoaded}`}
                 </div>
               </div>
             </CardHeader>
@@ -375,18 +360,24 @@ export default function AdminPage() {
                   <TableHeader>
                     <TableRow>
                       <TableHead>Пользователь</TableHead>
-                      <TableHead className="hidden md:table-cell">Роли</TableHead>
-                      <TableHead className="hidden lg:table-cell">Организация</TableHead>
+                      <TableHead className="hidden md:table-cell">
+                        Роли
+                      </TableHead>
+                      <TableHead className="hidden lg:table-cell">
+                        Организация
+                      </TableHead>
                       <TableHead>Статус</TableHead>
-                      <TableHead className="hidden xl:table-cell">Создан</TableHead>
+                      <TableHead className="hidden xl:table-cell">
+                        Создан
+                      </TableHead>
                       <TableHead className="text-right">Действия</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
                     {users.map((item) => {
-                      const roles = item.role_slugs ?? []
-                      const org = item.organization
-                      const isPending = pendingUserId === item.id
+                      const roles = item.role_slugs ?? [];
+                      const org = item.organization;
+                      const isPending = pendingUserId === item.id;
 
                       return (
                         <TableRow key={item.id}>
@@ -451,7 +442,7 @@ export default function AdminPage() {
                           <TableCell>
                             <div className="flex flex-col gap-1">
                               {item.banned ? (
-                                <Badge variant="outline">В бане</Badge>
+                                <Badge variant="outline">Заблокированы</Badge>
                               ) : (
                                 <Badge variant="secondary">Активен</Badge>
                               )}
@@ -483,11 +474,11 @@ export default function AdminPage() {
                               {banMutation.isPending && isPending ? (
                                 <Loader2 className="size-4 animate-spin" />
                               ) : null}
-                              {item.banned ? "Разбанить" : "Забанить"}
+                              {item.banned ? "Восстановить" : "Заблокировать"}
                             </Button>
                           </TableCell>
                         </TableRow>
-                      )
+                      );
                     })}
                   </TableBody>
                 </Table>
@@ -530,5 +521,5 @@ export default function AdminPage() {
         </section>
       </div>
     </div>
-  )
+  );
 }

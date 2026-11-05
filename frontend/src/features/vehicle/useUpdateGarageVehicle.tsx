@@ -93,7 +93,7 @@ export function useUpdateGarageVehicle() {
       qc.setQueryData(vehicleDetailQueryKey(variables.vehicleId), vehicle)
     },
 
-    onSettled(_response, variables) {
+    onSettled(_response, _error, variables) {
       qc.invalidateQueries({
         queryKey: VEHICLE_FEED_QUERY_KEY,
         refetchType: "active",

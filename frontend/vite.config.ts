@@ -1,7 +1,7 @@
 import tailwindcss from "@tailwindcss/vite";
 import basicSsl from "@vitejs/plugin-basic-ssl";
 import react from "@vitejs/plugin-react";
-import { defineConfig, loadEnv } from "vite";
+import { defineConfig, loadEnv, type PluginOption } from "vite";
 import path from "path";
 
 export default defineConfig(({ mode }) => {
@@ -14,7 +14,7 @@ export default defineConfig(({ mode }) => {
   const proxyTarget = env.VITE_PROXY_TARGET ?? "https://auto-spare-parts.fly.dev";
   const stripePublishableKey = env.VITE_STRIPE_PUBLISHABLE_KEY ?? "";
 
-  const plugins = [tailwindcss(), react()];
+  const plugins: PluginOption[] = [tailwindcss(), react()];
   if (enableHttps) {
     plugins.push(basicSsl());
   }

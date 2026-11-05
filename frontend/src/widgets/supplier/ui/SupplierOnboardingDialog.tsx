@@ -135,8 +135,8 @@ export function SupplierOnboardingDialog({
         setFlowState("intro")
       })
 
-      stripeElement.setOnExit?.((event) => {
-        handleOnboardingExit(event).catch(() => {
+      stripeElement.setOnExit?.(() => {
+        handleOnboardingExit(undefined).catch(() => {
           handleClose("cancelled")
         })
       })
@@ -167,8 +167,6 @@ export function SupplierOnboardingDialog({
       toast.error(message)
       cleanupEmbeddedComponent()
       setFlowState("intro")
-    } finally {
-      setComponentLoading(false)
     }
   }, [cleanupEmbeddedComponent, mountEmbeddedComponent, prepareOnboarding])
 

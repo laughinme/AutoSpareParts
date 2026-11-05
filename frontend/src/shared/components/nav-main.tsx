@@ -1,7 +1,6 @@
 import type {
   ComponentType,
   MouseEvent,
-  SVGProps,
 } from "react"
 import { NavLink } from "react-router-dom"
 
@@ -13,7 +12,7 @@ export type NavSection = {
   items: {
     title: string
     path: string
-    icon?: ComponentType<SVGProps<SVGSVGElement>>
+    icon?: ComponentType<{ className?: string }>
   }[]
 }
 
@@ -27,11 +26,11 @@ export function NavMain({
   onItemSelect?: (args: {
     section: NavSection
     item: NavSection["items"][number]
-    event: MouseEvent<HTMLAnchorElement>
+    event?: MouseEvent<HTMLAnchorElement>
   }) => boolean | void
 }) {
   return (
-    <nav className="flex flex-1 flex-nowrap items-center gap-6 overflow-x-auto">
+    <nav aria-label="Основная навигация" className="flex flex-1 flex-nowrap items-center gap-6 overflow-x-auto">
       {sections.map((section) => (
         <div
           key={`section-${section.label}`}
@@ -61,7 +60,7 @@ export function NavMain({
                   )
                 }
               >
-                {item.icon && <item.icon className="size-4 shrink-0" />}
+                {item.icon && <item.icon className="size-4 shrink-0" aria-hidden="true" />}
                 <span className="flex items-center gap-1">
                   {item.title}
                   {itemCounters?.[item.path] && itemCounters[item.path]! > 0 ? (

@@ -1,11 +1,9 @@
 import {
-  BackpackIcon,
   BarChartIcon,
-  BoxIcon,
   CardStackIcon,
   ClipboardIcon,
-  StarIcon,
 } from "@radix-ui/react-icons"
+import { CarFront, Grid2X2, ShoppingBag } from "lucide-react"
 import { IconShieldCheck } from "@tabler/icons-react"
 import FypPage from "@/pages/mainpages/fyp"
 import SupplierMain from "@/pages/mainpages/supplierMain"
@@ -78,17 +76,17 @@ export const SUPPLIER_NAV_SECTION: NavSection = {
   label: "Supplier",
   items: [
     {
-      title: "Dashboard",
+      title: "Обзор",
       path: ROUTE_PATHS.supplier.dashboard,
       icon: BarChartIcon,
     },
     {
-      title: "My products",
+      title: "Мои товары",
       path: ROUTE_PATHS.supplier.products,
       icon: CardStackIcon,
     },
     {
-      title: "My orders",
+      title: "Заказы магазина",
       path: ROUTE_PATHS.supplier.orders,
       icon: ClipboardIcon,
     },
@@ -99,7 +97,7 @@ export const ADMIN_NAV_SECTION: NavSection = {
   label: "Admin",
   items: [
     {
-      title: "Control room",
+      title: "Управление",
       path: ROUTE_PATHS.admin.dashboard,
       icon: IconShieldCheck,
     },
@@ -111,22 +109,22 @@ export const ROUTE_SECTIONS: NavSection[] = [
     label: "Buyer",
     items: [
       {
-        title: "FYP",
+        title: "Каталог",
         path: ROUTE_PATHS.buyer.fyp,
-        icon: StarIcon,
+        icon: Grid2X2,
       },
       {
-        title: "Cart",
+        title: "Корзина",
         path: ROUTE_PATHS.buyer.cart,
-        icon: BackpackIcon,
+        icon: ShoppingBag,
       },
       {
-        title: "Garage",
+        title: "Мой гараж",
         path: ROUTE_PATHS.buyer.garage,
-        icon: BoxIcon,
+        icon: CarFront,
       },
       {
-        title: "Orders",
+        title: "Заказы",
         path: ROUTE_PATHS.buyer.orders,
         icon: ClipboardIcon,
       },
@@ -185,6 +183,6 @@ export const PROTECTED_ROUTES = [
   },
   {
     path: ROUTE_PATHS.supplier.orders,
-    element: <PlaceholderPage title="Supplier orders" />,
+    element: <PlaceholderPage title="Заказы магазина" />,
   },
 ] as const

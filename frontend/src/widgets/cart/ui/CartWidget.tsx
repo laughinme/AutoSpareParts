@@ -1,7 +1,7 @@
 import { useMemo, useState } from "react";
 import { useQueryClient } from "@tanstack/react-query";
 import { Link } from "react-router-dom";
-import { AlertTriangle, Loader2, Package2, ShoppingCart } from "lucide-react";
+import { AlertTriangle, Loader2, Package2, ArrowRight } from "lucide-react";
 import { ReloadIcon, TrashIcon } from "@radix-ui/react-icons";
 import { toast } from "sonner";
 
@@ -68,20 +68,20 @@ export function CartWidget() {
 
   const hasLockedItems = cartItems.length > checkoutReadyItems.length;
 
-  const visibleTotals = useMemo(
+  const checkoutTotals = useMemo(
     () => ({
-      totalItems: visibleItems.reduce((total, item) => total + item.quantity, 0),
-      totalAmount: visibleItems.reduce(
+      totalItems: checkoutReadyItems.reduce((total, item) => total + item.quantity, 0),
+      totalAmount: checkoutReadyItems.reduce(
         (total, item) => total + item.totalPrice,
         0,
       ),
     }),
-    [visibleItems],
+    [checkoutReadyItems],
   );
 
   const totalLabel =
-    visibleItems.length > 0 ? formatMoney(visibleTotals.totalAmount) : "—";
-  const totalItems = visibleTotals.totalItems;
+    checkoutReadyItems.length > 0 ? formatMoney(checkoutTotals.totalAmount) : "—";
+  const totalItems = checkoutTotals.totalItems;
 
   const content = useMemo(() => {
     if (isLoading && !cart) {
@@ -138,7 +138,7 @@ export function CartWidget() {
           </p>
         ) : (
           <p className="text-sm text-muted-foreground">
-            Добавьте запчасти из каталога или подборки.
+            Добавьте запчасти из каталога.
           </p>
         );
 
@@ -277,97 +277,71 @@ export function CartWidget() {
   };
 
   return (
-    <div className="flex flex-col gap-6">
-      <Card className="gap-0 py-0">
-        <CardContent className="py-3">
-          <div className="flex items-center justify-between gap-4">
-            <div className="flex min-w-0 items-center gap-2 overflow-x-auto pr-2 text-sm text-muted-foreground whitespace-nowrap">
-              <ShoppingCart className="size-4 shrink-0" aria-hidden />
-
-              <span>Товаров:</span>
-              {isLoading && !cart ? (
-                <Skeleton className="h-5 w-10 shrink-0" />
-              ) : (
-                <span className="font-semibold tabular-nums text-foreground">
-                  {totalItems}
-                </span>
-              )}
-
-              <span className="text-muted-foreground/60">•</span>
-
-              <span>Сумма:</span>
-              {isLoading && !cart ? (
-                <Skeleton className="h-5 w-24 shrink-0" />
-              ) : (
-                <span className="font-semibold tabular-nums text-foreground">
-                  {totalLabel}
-                </span>
-              )}
-
-              <span className="text-muted-foreground/60">•</span>
-
-              <Label
-                htmlFor="cart-include-locked"
-                className="flex cursor-pointer items-center gap-2 text-xs font-medium text-muted-foreground"
-              >
-                <Checkbox
-                  id="cart-include-locked"
-                  checked={showLocked}
-                  onCheckedChange={(value) => setShowLocked(value === true)}
-                />
-                Недоступные
-              </Label>
-            </div>
-
+    <div className="cart-layout">
+      <section className="cart-contents" aria-label="Товары в корзине">
+        {content}
+        <div className="cart-tools">
+          <Label
+            htmlFor="cart-include-locked"
+            className="min-h-11 cursor-pointer gap-2 text-sm text-muted-foreground"
+          >
+            <Checkbox
+              id="cart-include-locked"
+              checked={showLocked}
+              onCheckedChange={(value) => setShowLocked(value === true)}
+            />
+            Показывать недоступные
+          </Label>
+          {cartItems.length > 0 && (
             <Button
               type="button"
-              size="sm"
-              className="shrink-0"
-              disabled={checkoutDisabled || checkoutMutation.isPending}
-              onClick={handleOpenCheckoutDialog}
+              variant="ghost"
+              className="min-h-11 text-destructive hover:bg-destructive/10 hover:text-destructive"
+              onClick={() => clearMutation.mutate()}
+              disabled={clearMutation.isPending}
             >
-              {(checkoutMutation.isPending || isFetching) && (
-                <Loader2 className="mr-2 size-4 animate-spin" aria-hidden />
+              {clearMutation.isPending ? (
+                <ReloadIcon className="size-4 animate-spin" aria-hidden />
+              ) : (
+                <TrashIcon className="size-4" aria-hidden />
               )}
-              {checkoutMutation.isPending ? "Обработка…" : "Оформить заказ"}
+              {clearMutation.isPending ? "Очистка…" : "Очистить корзину"}
             </Button>
-          </div>
-        </CardContent>
-      </Card>
-
-      {content}
-
-      {cartItems.length > 0 && (
-        <div className="flex justify-end">
-          <Button
-            type="button"
-            variant="ghost"
-            size="sm"
-            className="text-destructive hover:bg-destructive/10 hover:text-destructive"
-            onClick={() => clearMutation.mutate()}
-            disabled={clearMutation.isPending || !cart || cart.items.length === 0}
-          >
-            {clearMutation.isPending ? (
-              <>
-                <ReloadIcon className="size-3.5 animate-spin" aria-hidden />
-                Очистка…
-              </>
-            ) : (
-              <>
-                <TrashIcon className="size-3.5" aria-hidden />
-                Очистить корзину
-              </>
-            )}
-          </Button>
+          )}
         </div>
-      )}
+      </section>
+
+      <aside className="cart-summary" aria-labelledby="cart-summary-title">
+        <h2 id="cart-summary-title">Ваш заказ</h2>
+        <dl>
+          <div>
+            <dt>Товары</dt>
+            <dd>{isLoading && !cart ? <Skeleton className="h-5 w-9" /> : totalItems}</dd>
+          </div>
+          <div>
+            <dt>Итого</dt>
+            <dd>{isLoading && !cart ? <Skeleton className="h-6 w-24" /> : totalLabel}</dd>
+          </div>
+        </dl>
+        <Button
+          type="button"
+          className="min-h-12 w-full justify-between"
+          disabled={checkoutDisabled || checkoutMutation.isPending}
+          onClick={handleOpenCheckoutDialog}
+        >
+          {checkoutMutation.isPending ? "Обработка…" : "Оформить заказ"}
+          {checkoutMutation.isPending || isFetching
+            ? <Loader2 className="size-4 animate-spin" aria-hidden />
+            : <ArrowRight className="size-4" aria-hidden />}
+        </Button>
+      </aside>
 
       <Dialog open={isCheckoutDialogOpen} onOpenChange={setCheckoutDialogOpen}>
         <DialogContent>
           <DialogHeader>
             <DialogTitle>Укажите адрес доставки</DialogTitle>
             <DialogDescription>
-              После сохранения мы перенаправим вас на защищённую страницу оплаты Stripe.
+              После подтверждения откроется страница оплаты Stripe.
             </DialogDescription>
           </DialogHeader>
           <form
@@ -448,12 +422,13 @@ const formatMoney = (value: number) => {
   }
 
   try {
-    return new Intl.NumberFormat("en-US", {
+    return new Intl.NumberFormat("ru-RU", {
       style: "currency",
       currency: "USD",
-      maximumFractionDigits: 0,
+      minimumFractionDigits: 0,
+      maximumFractionDigits: 2,
     }).format(value);
   } catch {
-    return `$${Number(value).toLocaleString("en-US")}`;
+    return `${value.toLocaleString("ru-RU")} $`;
   }
 };

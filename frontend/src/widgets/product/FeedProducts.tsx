@@ -1,35 +1,31 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from "react"
-import { useInfiniteQuery } from "@tanstack/react-query"
-import { useOutletContext } from "react-router-dom"
-import { Filter, Search } from "lucide-react"
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useInfiniteQuery } from "@tanstack/react-query";
+import { useOutletContext } from "react-router-dom";
+import { ArrowRight, PackageSearch, Search, SlidersHorizontal, X } from "lucide-react";
 
-import type { ProtectedOutletContext } from "@/app/App"
-import { toProductFeed } from "@/entities/product/model/adapters"
-import { ProductCard } from "@/entities/product/ui/ProductCard"
-import { useCartQuery } from "@/entities/cart/model/useCartQuery"
-import { useAddToCart } from "@/features/cart/useAddToCart"
-import { useUpdateCart } from "@/features/cart/useUpdateCart"
-import { useRemoveCartItem } from "@/features/cart/useRemoveCartItem"
-import { ProductFiltersForm } from "@/features/product-filters/ui/ProductFiltersForm"
-import type { FilterState } from "@/features/product-filters/model/types"
-import { buildParams } from "@/features/product-filters/model/buildParams"
-import { Button } from "@/shared/components/ui/button"
-import {
-  Card,
-  CardContent,
-  CardFooter,
-} from "@/shared/components/ui/card"
+import type { ProtectedOutletContext } from "@/app/App";
+import { toProductFeed } from "@/entities/product/model/adapters";
+import { ProductCard } from "@/entities/product/ui/ProductCard";
+import { useCartQuery } from "@/entities/cart/model/useCartQuery";
+import { useAddToCart } from "@/features/cart/useAddToCart";
+import { useUpdateCart } from "@/features/cart/useUpdateCart";
+import { useRemoveCartItem } from "@/features/cart/useRemoveCartItem";
+import { ProductFiltersForm } from "@/features/product-filters/ui/ProductFiltersForm";
+import type { FilterState } from "@/features/product-filters/model/types";
+import { buildParams } from "@/features/product-filters/model/buildParams";
+import { Button } from "@/shared/components/ui/button";
 import {
   Sheet,
   SheetContent,
   SheetHeader,
   SheetTitle,
-} from "@/shared/components/ui/sheet"
-import { Input } from "@/shared/components/ui/input"
-import { Skeleton } from "@/shared/components/ui/skeleton"
-import { getProductsCatalog } from "@/entities/product/api"
+  SheetTrigger,
+} from "@/shared/components/ui/sheet";
+import { Input } from "@/shared/components/ui/input";
+import { Skeleton } from "@/shared/components/ui/skeleton";
+import { getProductsCatalog } from "@/entities/product/api";
 
-const CATALOG_PAGE_SIZE = 20
+const CATALOG_PAGE_SIZE = 20;
 
 const createDefaultFilters = (): FilterState => ({
   q: "",
@@ -38,24 +34,27 @@ const createDefaultFilters = (): FilterState => ({
   originality: null,
   price_min: "",
   price_max: "",
-})
+});
 
 export function FeedProducts() {
-  const { setHeaderSearch } = useOutletContext<ProtectedOutletContext>()
+  const { setHeaderSearch } = useOutletContext<ProtectedOutletContext>();
 
-  const [draftFilters, setDraftFilters] = useState<FilterState>(createDefaultFilters)
-  const [appliedFilters, setAppliedFilters] = useState<FilterState>(createDefaultFilters)
-  const [isFiltersSheetOpen, setIsFiltersSheetOpen] = useState(false)
-  const searchDebounceRef = useRef<ReturnType<typeof setTimeout> | null>(null)
-  const { data: cart } = useCartQuery()
-  const addMutation = useAddToCart()
-  const updateMutation = useUpdateCart()
-  const removeMutation = useRemoveCartItem()
+  const [draftFilters, setDraftFilters] =
+    useState<FilterState>(createDefaultFilters);
+  const [appliedFilters, setAppliedFilters] =
+    useState<FilterState>(createDefaultFilters);
+  const [isFiltersSheetOpen, setIsFiltersSheetOpen] = useState(false);
+  const searchDebounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const filtersTitleRef = useRef<HTMLHeadingElement>(null);
+  const { data: cart } = useCartQuery();
+  const addMutation = useAddToCart();
+  const updateMutation = useUpdateCart();
+  const removeMutation = useRemoveCartItem();
 
   const queryParams = useMemo(
     () => buildParams(appliedFilters),
-    [appliedFilters]
-  )
+    [appliedFilters],
+  );
 
   const {
     data,
@@ -72,191 +71,228 @@ export function FeedProducts() {
       const response = await getProductsCatalog({
         ...queryParams,
         cursor: pageParam,
-      })
+      });
 
-      return toProductFeed(response)
+      return toProductFeed(response);
     },
     getNextPageParam: (lastPage) => lastPage.nextCursor ?? undefined,
-  })
+  });
 
   const products = useMemo(
     () => data?.pages.flatMap((page) => page.items) ?? [],
-    [data]
-  )
+    [data],
+  );
 
-  const currentPageSize = queryParams.limit ?? CATALOG_PAGE_SIZE
-  const initialSkeletonCount = Math.max(4, Math.min(12, currentPageSize))
-  const loadingMoreSkeletonCount = Math.max(2, Math.min(6, Math.ceil(currentPageSize / 4)))
+  const currentPageSize = queryParams.limit ?? CATALOG_PAGE_SIZE;
+  const initialSkeletonCount = Math.max(4, Math.min(12, currentPageSize));
+  const loadingMoreSkeletonCount = Math.max(
+    2,
+    Math.min(6, Math.ceil(currentPageSize / 4)),
+  );
 
-  const loaderRef = useRef<HTMLDivElement | null>(null)
+  const loaderRef = useRef<HTMLDivElement | null>(null);
 
   const handleFiltersChange = useCallback((patch: Partial<FilterState>) => {
-    setDraftFilters((prev) => {
-      const nextDraft = {
-        ...prev,
-        ...patch,
-      }
+    setDraftFilters((current) => ({ ...current, ...patch }));
+  }, []);
 
-      if ("q" in patch) {
-        if (searchDebounceRef.current) {
-          clearTimeout(searchDebounceRef.current)
-        }
-        searchDebounceRef.current = setTimeout(() => {
-          setAppliedFilters((prevApplied) => {
-            const nextApplied = {
-              ...nextDraft,
-            }
-            const isSame =
-              JSON.stringify(prevApplied ?? {}) === JSON.stringify(nextApplied ?? {})
-            return isSame ? prevApplied : nextApplied
-          })
-        }, 350)
-      }
+  const applySearch = useCallback((q: string) => {
+    if (searchDebounceRef.current) {
+      clearTimeout(searchDebounceRef.current);
+      searchDebounceRef.current = null;
+    }
+    setAppliedFilters((current) => current.q === q ? current : { ...current, q });
+  }, []);
 
-      return nextDraft
-    })
-  }, [])
+  const handleSearchChange = useCallback((q: string) => {
+    handleFiltersChange({ q });
+    if (searchDebounceRef.current) clearTimeout(searchDebounceRef.current);
+    searchDebounceRef.current = setTimeout(() => applySearch(q), 350);
+  }, [applySearch, handleFiltersChange]);
 
   const handleApply = useCallback(() => {
     if (searchDebounceRef.current) {
-      clearTimeout(searchDebounceRef.current)
-      searchDebounceRef.current = null
+      clearTimeout(searchDebounceRef.current);
+      searchDebounceRef.current = null;
     }
-    setAppliedFilters((prev) => {
-      const next = {
-        ...draftFilters,
-      }
-      const isSame =
-        JSON.stringify(prev ?? {}) === JSON.stringify(next ?? {})
-      return isSame ? prev : next
-    })
-  }, [draftFilters])
+    setAppliedFilters(draftFilters);
+  }, [draftFilters]);
+
+  useEffect(
+    () => () => {
+      if (searchDebounceRef.current) clearTimeout(searchDebounceRef.current);
+    },
+    [],
+  );
 
   const handleReset = useCallback(() => {
     if (searchDebounceRef.current) {
-      clearTimeout(searchDebounceRef.current)
-      searchDebounceRef.current = null
+      clearTimeout(searchDebounceRef.current);
+      searchDebounceRef.current = null;
     }
-    const resetDraft = createDefaultFilters()
-    const resetApplied = createDefaultFilters()
-    setDraftFilters(resetDraft)
-    setAppliedFilters(resetApplied)
-  }, [])
+    const resetDraft = createDefaultFilters();
+    const resetApplied = createDefaultFilters();
+    setDraftFilters(resetDraft);
+    setAppliedFilters(resetApplied);
+  }, []);
 
   useEffect(() => {
     if (!hasNextPage) {
-      return
+      return;
     }
 
-    const target = loaderRef.current
+    const target = loaderRef.current;
     if (!target) {
-      return
+      return;
     }
 
     const observer = new IntersectionObserver(
       (entries) => {
-        const [entry] = entries
+        const [entry] = entries;
         if (entry?.isIntersecting && !isFetchingNextPage) {
-          fetchNextPage()
+          fetchNextPage();
         }
       },
-      { rootMargin: "240px" }
-    )
+      { rootMargin: "240px" },
+    );
 
-    observer.observe(target)
+    observer.observe(target);
 
     return () => {
-      observer.disconnect()
-    }
-  }, [fetchNextPage, hasNextPage, isFetchingNextPage])
+      observer.disconnect();
+    };
+  }, [fetchNextPage, hasNextPage, isFetchingNextPage]);
 
-  const isInitialLoading = isLoading && products.length === 0
-  const isEmpty = !isLoading && products.length === 0 && !isError
+  const isInitialLoading = isLoading && products.length === 0;
+  const isEmpty = !isLoading && products.length === 0 && !isError;
 
   const skeletonCount = isInitialLoading
     ? initialSkeletonCount
     : isFetchingNextPage
       ? loadingMoreSkeletonCount
-      : 0
-  const shouldRenderGrid = products.length > 0 || skeletonCount > 0
+      : 0;
+  const shouldRenderGrid = products.length > 0 || skeletonCount > 0;
 
   const searchNode = useMemo(() => {
-    const value = draftFilters.q ?? ""
+    const value = draftFilters.q ?? "";
     return (
       <form
-        className="flex w-full items-center gap-2"
+        role="search"
+        className="catalog-search"
         onSubmit={(event) => {
-          event.preventDefault()
-          handleApply()
+          event.preventDefault();
+          applySearch(value);
         }}
       >
-        <div className="relative flex w-full items-center">
-          <Search className="absolute left-3 size-4 text-muted-foreground" />
-          <Input
-            value={value}
-            onChange={(event) =>
-              handleFiltersChange({ q: event.target.value })
-            }
-            placeholder="Поиск по каталогу"
-            className="w-full min-w-0 pl-9 sm:w-52 md:w-64"
-            autoComplete="off"
-            spellCheck={false}
-          />
-        </div>
-        <Button
-          type="submit"
-          size="sm"
-          variant="secondary"
-          disabled={isLoading}
-        >
-          Найти
+        <Search size={20} strokeWidth={1.8} aria-hidden="true" />
+        <Input
+          value={value}
+          onChange={(event) => handleSearchChange(event.target.value)}
+          placeholder="Название запчасти или артикул"
+          aria-label="Поиск запчастей"
+          autoComplete="off"
+          spellCheck={false}
+        />
+        {value && (
+          <button
+            type="button"
+            className="catalog-search-clear"
+            aria-label="Очистить поиск"
+            onClick={() => {
+              handleFiltersChange({ q: "" });
+              applySearch("");
+            }}
+          >
+            <X size={16} aria-hidden="true" />
+          </button>
+        )}
+        <Button type="submit" className="catalog-search-submit" aria-label="Найти">
+          <span>Найти</span>
+          <ArrowRight size={18} aria-hidden="true" />
         </Button>
       </form>
-    )
-  }, [draftFilters.q, handleApply, handleFiltersChange, isLoading])
+    );
+  }, [draftFilters.q, applySearch, handleFiltersChange, handleSearchChange]);
 
   useEffect(() => {
-    setHeaderSearch(searchNode)
-  }, [searchNode, setHeaderSearch])
+    setHeaderSearch(searchNode);
+  }, [searchNode, setHeaderSearch]);
 
   useEffect(
     () => () => {
-      setHeaderSearch(null)
+      setHeaderSearch(null);
     },
-    [setHeaderSearch]
-  )
+    [setHeaderSearch],
+  );
 
   return (
-    <div className="flex flex-col gap-6">
+    <section
+      id="catalog"
+      className="catalog-section"
+      aria-labelledby="catalog-results-title"
+      tabIndex={-1}
+    >
+      <div className="catalog-heading">
+        <h2 id="catalog-results-title">Каталог запчастей</h2>
+        <span className="catalog-count" aria-live="polite">
+          {isLoading
+            ? "Загружаем каталог…"
+            : isError
+              ? "Каталог недоступен"
+              : `Предложения: ${products.length.toLocaleString("ru-RU")}${hasNextPage ? "+" : ""}`}
+        </span>
+      </div>
       <Sheet open={isFiltersSheetOpen} onOpenChange={setIsFiltersSheetOpen}>
-        <div className="lg:hidden flex">
-          <Button
-            type="button"
-            variant="outline"
-            size="sm"
-            className="inline-flex items-center gap-2 px-3"
-            onClick={() => setIsFiltersSheetOpen(true)}
-          >
-            <Filter className="size-4" />
-            Фильтры
-          </Button>
+        <div className="catalog-toolbar">
+          <div className="catalog-tabs" role="group" aria-label="Быстрый выбор состояния">
+            {([
+              { value: null, label: "Все запчасти" },
+              { value: "new", label: "Новые" },
+              { value: "used", label: "Б/у" },
+            ] as const).map((tab) => (
+              <button
+                type="button"
+                key={tab.label}
+                aria-pressed={appliedFilters.condition === tab.value}
+                onClick={() => {
+                  applySearch(draftFilters.q ?? "");
+                  setDraftFilters((current) => ({ ...current, condition: tab.value }));
+                  setAppliedFilters((current) => ({ ...current, condition: tab.value }));
+                }}
+              >
+                {tab.label}
+              </button>
+            ))}
+          </div>
+          <SheetTrigger asChild>
+            <Button type="button" variant="outline" className="catalog-filter-trigger lg:hidden" aria-label="Фильтры">
+              <SlidersHorizontal size={17} aria-hidden="true" />
+              <span>Фильтры</span>
+            </Button>
+          </SheetTrigger>
         </div>
 
         <SheetContent
           side="left"
-          className="flex w-[88vw] max-w-[22rem] flex-col gap-4 p-0 sm:w-[24rem]"
+          aria-describedby={undefined}
+          onOpenAutoFocus={(event) => {
+            event.preventDefault();
+            filtersTitleRef.current?.focus();
+          }}
+          className="catalog-filter-sheet flex w-[88vw] max-w-[24rem] flex-col gap-0 overflow-y-auto p-0"
         >
-          <SheetHeader className="px-4 pb-0 pt-6">
-            <SheetTitle className="text-base">Фильтры</SheetTitle>
+          <SheetHeader className="px-5 pb-5 pt-6">
+            <SheetTitle ref={filtersTitleRef} tabIndex={-1} className="text-xl">Фильтры каталога</SheetTitle>
           </SheetHeader>
-          <div className="px-4 pb-6">
+          <div className="px-5 pb-6">
             <ProductFiltersForm
+              showHeading={false}
               state={draftFilters}
               onChange={handleFiltersChange}
               onReset={handleReset}
               onApply={() => {
-                handleApply()
-                setIsFiltersSheetOpen(false)
+                handleApply();
+                setIsFiltersSheetOpen(false);
               }}
               disabled={isLoading || isFetchingNextPage}
               isLoading={isLoading || isFetchingNextPage}
@@ -265,9 +301,19 @@ export function FeedProducts() {
         </SheetContent>
       </Sheet>
 
-      <div className="flex flex-col gap-6 lg:grid lg:grid-cols-[22rem_minmax(0,1fr)] lg:items-start">
-        <aside className="hidden lg:sticky lg:top-20 lg:block lg:h-[calc(100vh-5rem)] lg:overflow-y-auto">
-          <div className="w-full lg:max-w-[22rem]">
+      {(appliedFilters.q ||
+        appliedFilters.make_id ||
+        appliedFilters.originality ||
+        appliedFilters.price_min !== "" ||
+        appliedFilters.price_max !== "") && (
+        <div className="active-filters">
+          <span>{appliedFilters.q ? `Поиск по запросу «${appliedFilters.q}»` : "Фильтры применены"}</span>
+          <button type="button" onClick={handleReset}>Сбросить <X size={14} aria-hidden="true" /></button>
+        </div>
+      )}
+      <div className="catalog-layout">
+        <aside className="catalog-sidebar">
+          <div className="w-full">
             <ProductFiltersForm
               state={draftFilters}
               onChange={handleFiltersChange}
@@ -279,38 +325,36 @@ export function FeedProducts() {
           </div>
         </aside>
 
-        <div className="flex flex-col gap-6">
+        <div className="catalog-results flex min-w-0 flex-col gap-5">
           {isError && (
             <div className="flex items-start justify-between gap-4 rounded-xl border border-destructive/40 bg-destructive/10 px-5 py-4 text-sm text-destructive">
               <span className="leading-snug">
                 Не удалось загрузить каталог товаров. Попробуйте ещё раз.
               </span>
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => refetch()}
-              >
+              <Button variant="outline" size="sm" onClick={() => refetch()}>
                 Обновить
               </Button>
             </div>
           )}
 
           {shouldRenderGrid ? (
-            <div className="grid gap-5 sm:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4">
+            <div className="product-grid">
               {products.map((product) => {
                 const cartItem = cart?.items.find(
-                  (item) => item.product.id === product.id
-                )
-                const quantity = cartItem?.quantity ?? 0
+                  (item) => item.product.id === product.id,
+                );
+                const quantity = cartItem?.quantity ?? 0;
                 const isAddPending =
                   addMutation.isPending &&
-                  addMutation.variables?.product_id === product.id
+                  addMutation.variables?.product_id === product.id;
                 const isUpdatePending =
                   updateMutation.isPending &&
-                  updateMutation.variables?.item_id === cartItem?.id
+                  updateMutation.variables?.item_id === cartItem?.id;
                 const isRemovePending =
-                  removeMutation.isPending && removeMutation.variables === cartItem?.id
-                const isMutating = isAddPending || isUpdatePending || isRemovePending
+                  removeMutation.isPending &&
+                  removeMutation.variables === cartItem?.id;
+                const isMutating =
+                  isAddPending || isUpdatePending || isRemovePending;
 
                 return (
                   <ProductCard
@@ -328,30 +372,30 @@ export function FeedProducts() {
                         addMutation.mutate({
                           product_id: product.id,
                           quantity: 1,
-                        })
-                        return
+                        });
+                        return;
                       }
                       updateMutation.mutate({
                         item_id: cartItem.id,
                         quantity: cartItem.quantity + 1,
-                      })
+                      });
                     }}
                     onDecrement={() => {
                       if (!cartItem) {
-                        return
+                        return;
                       }
                       if (cartItem.quantity <= 1) {
-                        removeMutation.mutate(cartItem.id)
-                        return
+                        removeMutation.mutate(cartItem.id);
+                        return;
                       }
                       updateMutation.mutate({
                         item_id: cartItem.id,
                         quantity: cartItem.quantity - 1,
-                      })
+                      });
                     }}
                     isMutating={isMutating}
                   />
-                )
+                );
               })}
 
               {Array.from({ length: skeletonCount }).map((_, index) => (
@@ -361,8 +405,13 @@ export function FeedProducts() {
           ) : null}
 
           {isEmpty && (
-            <div className="rounded-xl border bg-card px-6 py-10 text-center text-sm text-muted-foreground">
-              Пока нет товаров для отображения.
+            <div className="catalog-empty">
+              <PackageSearch size={42} strokeWidth={1.2} />
+              <h3>Пока ничего не нашлось</h3>
+              <p>Попробуйте другое название или измените фильтры.</p>
+              <Button variant="outline" onClick={handleReset}>
+                Сбросить фильтры
+              </Button>
             </div>
           )}
 
@@ -381,21 +430,20 @@ export function FeedProducts() {
           <div ref={loaderRef} aria-hidden className="h-px w-full" />
         </div>
       </div>
-    </div>
-  )
+    </section>
+  );
 }
 
 function ProductCardSkeleton() {
   return (
-    <Card className="gap-0 overflow-hidden py-0">
-      <Skeleton className="aspect-[4/3] w-full rounded-none" />
-      <CardContent className="space-y-3 px-5 py-4">
-        <Skeleton className="h-4 w-3/4" />
-        <Skeleton className="h-4 w-1/2" />
-      </CardContent>
-      <CardFooter className="border-t px-5 py-4">
-        <Skeleton className="h-6 w-24" />
-      </CardFooter>
-    </Card>
-  )
+    <div className="product-card product-skeleton" aria-hidden="true">
+      <Skeleton className="product-image" />
+      <div className="product-info space-y-3">
+        <Skeleton className="h-5 w-2/5" />
+        <Skeleton className="h-4 w-4/5" />
+        <Skeleton className="h-4 w-3/5" />
+        <Skeleton className="h-11 w-full" />
+      </div>
+    </div>
+  );
 }
