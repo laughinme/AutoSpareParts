@@ -1,5 +1,7 @@
 # Auto Spare Parts — маркетплейс автозапчастей (Dubai wholesale + локальные продавцы)
 
+**Живая версия:** https://spareparts.prooood.ru. Стенд работает на домашнем сервере и обновляется сам при пуше в `main` ([как устроен деплой](deploy/home/README.md)).
+
 ![TypeScript](https://img.shields.io/badge/TypeScript-Web-blue)
 ![Python](https://img.shields.io/badge/Python-Backend-3776AB)
 ![Kotlin](https://img.shields.io/badge/Kotlin-Mobile-7F52FF)
