@@ -54,9 +54,9 @@ class Settings(BaseSettings):
     MAX_PHOTO_SIZE: int = 20 # in MB
     
     # External services
-    STRIPE_SECRET_KEY: str
+    STRIPE_SECRET_KEY: str = ''
     STRIPE_WEBHOOK_SECRET: str = ''
-    STRIPE_CONNECT_WEBHOOK_SECRET: str
+    STRIPE_CONNECT_WEBHOOK_SECRET: str = ''
     STRIPE_LOCAL_CONNECT_WEBHOOK_SECRET: str = ''
     
     # Auth Settings    
